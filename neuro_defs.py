@@ -45,7 +45,7 @@ def send_message(id, msg, stiker=None, attach=None):
 # на данный момент только одна клавиатура, но есть возможность создавать другие
 def create_keyboard(id, text, response="start"):
     try:
-        print(2)
+        keyboard = VkKeyboard(one_time=True)
         if response == "start":
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -59,13 +59,15 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_button('Что ты умеешь?', color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
             keyboard.add_button('Пожелания по улучшению', color=VkKeyboardColor.PRIMARY)
-            keyboard = keyboard.get_keyboard()
-            vk.messages.send(
-                user_id=id,
-                random_id=get_random_id(),
-                message=text, keyboard=keyboard)
-    except BaseException:
-        print("ошибка, возможно человек добавил в чс")
+        elif response == "yaro":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Ссылка на ВК', "https://vk.com/bramind002")
+        vk.messages.send(
+            user_id=id,
+            random_id=get_random_id(),
+            message=text, keyboard=keyboard.get_keyboard())
+    except BaseException as Exception:
+        print(Exception)
         return
 
 
@@ -73,7 +75,6 @@ def clean_up(text):
     text = text.lower()
     # описываем текстовый шаблон для удаления: "все, что НЕ является буквой \w или пробелом \s"
     re_not_word = r'[^\w\s]'
-    # заменяем в исходном тексте то, что соответствует шаблону, на пустой текст (удаляем)
     text = re.sub(re_not_word, '', text)
     return text
 
@@ -81,8 +82,6 @@ def clean_up(text):
 def text_match(user_text, example):
     user_text = clean_up(user_text)
     example = clean_up(example)
-    # A.find(B) - возвращает номер буквы, с которой идет текст B внутри текста А
-    # find возвращает -1 в случае, если ничего не нашла
     if user_text.find(example) != -1:
         return True
     if example.find(user_text) != -1:
@@ -95,8 +94,7 @@ def text_match(user_text, example):
 users = {}
 
 
-def get_intent(text, model_mlp):
-    vectorizer = CountVectorizer()
+def get_intent(text, model_mlp, vectorizer):
     text_vec = vectorizer.transform([text])
     return model_mlp.predict(text_vec)[0]
 
@@ -105,10 +103,13 @@ def get_response(intent, data):
     return random.choice(data[intent]['responses'])
 
 
-def answering(text, model_mlp, vectorizer, data):
+def answering(text, model_mlp, data, vectorizer):
     intent = get_intent(text, model_mlp, vectorizer)
     answer = get_response(intent, data)
-    return answer
+    full_answer = []
+    full_answer.append(answer)
+    full_answer.append(intent)
+    return full_answer
 
 
 def add_answer():
@@ -118,10 +119,17 @@ def add_answer():
         print("Введите название интента")
         intent = input()
         print("Вводите вопросы, чтобы закончить, введите 0")
+        flag = False
         while True:
             question = input()
+
             if question == "0":
                 break
+            if not flag:
+                data[intent] = {}
+                data[intent]['examples'] = []
+                data[intent]['responses'] = []
+                flag = True
             data[intent]['examples'].append(question)
         print("Вводите ответы, чтобы закончить, введите 0")
         while True:

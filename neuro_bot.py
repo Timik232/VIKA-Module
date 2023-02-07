@@ -33,14 +33,21 @@ if __name__ == "__main__":
 
         vectorizer = CountVectorizer()
         X_vec = vectorizer.fit_transform(X)
-        model_mlp = MLPClassifier()
+        model_mlp = MLPClassifier(hidden_layer_sizes=100, activation='relu', solver='adam', learning_rate='adaptive', max_iter=1000)
         model_mlp.fit(X_vec, y)
         with open('model.pkl', 'wb') as f:
             pickle.dump(model_mlp, f)
+        with open('vector.pkl', 'wb') as f:
+            pickle.dump(vectorizer, f)
+
         print("Обучено")
     else:
+        with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+            data = json.load(f)
         with open('model.pkl', 'rb') as f:
             model_mlp = pickle.load(f)
+        with open('vector.pkl', 'rb') as f:
+            vectorizer = pickle.load(f)
         print("Обученная модель загружена")
     Thread(target=add_answer, args=()).start()
     if os.path.isfile('mirea_users.pickle'):
@@ -86,5 +93,8 @@ if __name__ == "__main__":
                 send_message(id,"Введите в следующем сообщении свои пожелания по улучшению бота. Они будут переданы разработчику. Если хотите отменить отправку, напишите 'Отмена'")
                 users[id].state = "Пожелания"
             else:
-
-                create_keyboard(id, answering(message, model_mlp, vectorizer, data))
+                answer = answering(message, model_mlp, data, vectorizer)
+                if answer[1] == "not_that" or answer[1] == "help_me" or answer[1] == "callhuman":
+                    create_keyboard(id, answer[0], "yaro")
+                else:
+                    create_keyboard(id, answer[0])
