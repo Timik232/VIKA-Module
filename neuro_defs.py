@@ -81,13 +81,28 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button('Подробнее о музеях', "https://www.mirea.ru/about/history-of-the-university/the-museum-mirea/")
         elif response == "obhodnoy":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button('Подробнее о том, как записаться на физкультуру', "https://student.mirea.ru/help/section/physical_education/")
+            keyboard.add_openlink_button('Про физкультуру', "https://student.mirea.ru/help/section/physical_education/")
         elif response == "work":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Центр карьеры', "https://career.mirea.ru/")
         elif response == "website":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Сайт МИРЭА', "https://www.mirea.ru/")
+        elif response == "military":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Памятка военнообязанному', "https://student.mirea.ru/help/section/conscript/")
+        elif response == "rectorate":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Ректорат', "https://www.mirea.ru/about/administration/rektorat/")
+        elif response == "library":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Сайт библиотеки', "https://library.mirea.ru/")
+        elif response == "office":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('СтудОфис', "https://student.mirea.ru/services/")
+        elif response == "scholarship":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Размер стипендии', "https://student.mirea.ru/scholaship_support/scholarships/state_academic_support/")
         vk.messages.send(
             user_id=id,
             random_id=get_random_id(),

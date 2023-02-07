@@ -114,11 +114,25 @@ if __name__ == "__main__":
                         upload = vk_api.VkUpload(vk_session)
                         file = upload.document("файлы/карты.pdf", "doc")
                         send_message(id, answer[0], None, file)
+                    elif answer[1] == "metodichka":
+                        upload = vk_api.VkUpload(vk_session)
+                        file = upload.document("файлы/методичка_2022.pdf", "doc")
+                        send_message(id, answer[0], None, file)
                     elif answer[1] == "obhodnoy":
                         create_keyboard(id, answer[0], "obhodnoy")
                     elif answer[1] == "work":
                         create_keyboard(id, answer[0], "work")
                     elif answer[1] == "website":
                         create_keyboard(id, answer[0], "website")
+                    elif answer[1] == "military":
+                        create_keyboard(id, answer[0], "military")
+                    elif answer[1] == "rectorate":
+                        create_keyboard(id, answer[0], "rectorate")
+                    elif answer[1] == "library":
+                        create_keyboard(id, answer[0], "library")
+                    elif answer[1] == "office":
+                        create_keyboard(id, answer[0], "office")
+                    elif answer[1] == "scholarship":
+                        create_keyboard(id, answer[0], "scholarship")
                     else:
                         create_keyboard(id, answer[0])
