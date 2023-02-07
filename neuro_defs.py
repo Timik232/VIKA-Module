@@ -50,7 +50,7 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button('Карта университета', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button('Карта Университета', color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
             keyboard.add_button('Рассылка', color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
@@ -62,6 +62,32 @@ def create_keyboard(id, text, response="start"):
         elif response == "yaro":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Ссылка на ВК', "https://vk.com/bramind002")
+        elif response == "grifon":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Стикеры с грифоном в ТГ', "https://t.me/addstickers/rtumirea")
+        elif response == "psychology":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Психологическая служба', "https://student.mirea.ru/psychological_service/staff/")
+        elif response == "map":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Навигатор', "https://ischemes.ru/group/rtu-mirea/vern78")
+        elif response == "rules":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Устав', "https://www.mirea.ru/upload/medialibrary/d0e/Ustav-Novyy.pdf")
+            keyboard.add_openlink_button('Правила внутреннего распорядка', "https://www.mirea.ru/docs/125641/")
+            keyboard.add_openlink_button('Этический кодекс', "https://student.mirea.ru/regulatory_documents/file/3f9468db49ffd14fe96c0d28d8c056bf.pdf")
+        elif response == "museums":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Подробнее о музеях', "https://www.mirea.ru/about/history-of-the-university/the-museum-mirea/")
+        elif response == "obhodnoy":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Подробнее о том, как записаться на физкультуру', "https://student.mirea.ru/help/section/physical_education/")
+        elif response == "work":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Центр карьеры', "https://career.mirea.ru/")
+        elif response == "website":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Сайт МИРЭА', "https://www.mirea.ru/")
         vk.messages.send(
             user_id=id,
             random_id=get_random_id(),
