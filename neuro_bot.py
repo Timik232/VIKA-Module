@@ -1,18 +1,17 @@
-import vk_api
 import os
-import random
-import json
 import pickle
+import random
+import requests
 import urllib.request
+import vk_api
+from neuro_defs import *
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
-from vk_api.longpoll import VkLongPoll, VkEventType
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
-from vk_api.utils import get_random_id
-from neuro_defs import *
 from threading import Thread
-
-
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from vk_api.longpoll import VkLongPoll, VkEventType
+from vk_api.utils import get_random_id
+from vk_api.bot_longpoll import VkBotEventType
 
 if __name__ == "__main__":
     if not os.path.isfile('model.pkl'):
@@ -33,7 +32,7 @@ if __name__ == "__main__":
 
         vectorizer = CountVectorizer()
         X_vec = vectorizer.fit_transform(X)
-        model_mlp = MLPClassifier(hidden_layer_sizes=100, activation='relu', solver='adam', learning_rate='adaptive', max_iter=1000)
+        model_mlp = MLPClassifier(hidden_layer_sizes=300, activation='relu', solver='adam', learning_rate='adaptive', max_iter=1500)
         model_mlp.fit(X_vec, y)
         with open('model.pkl', 'wb') as f:
             pickle.dump(model_mlp, f)
@@ -80,7 +79,7 @@ if __name__ == "__main__":
                 users[id].state = ""
             if text_match(message,"расписание"):
                 send_message(id,"В данном боте тестируется только система ответов на вопросы, расписание в основной версии ВИКА")
-            elif text_match(message,"карта"):
+            elif text_match(message,"карта Университета"):
                 create_keyboard(id,"Используйте навигатор по Университету", "map")
             elif text_match(message,"рассылка"):
                 send_message(id,"В данном боте тестируется только система ответов на вопросы, рассылка в основной версии ВИКА")
@@ -96,43 +95,33 @@ if __name__ == "__main__":
             else:
                 if users[id].state == "":
                     answer = answering(message, model_mlp, data, vectorizer)
-                    if answer[1] == "not_that" or answer[1] == "help_me" or answer[1] == "callhuman":
-                        create_keyboard(id, answer[0], "yaro")
-                    elif answer[1] == "grifon":
-                        create_keyboard(id, answer[0], "grifon")
-                    elif answer[1] == "danger" or answer[1] == "feedback_bad" or answer[1] == "motivation":
-                        create_keyboard(id, answer[0], "psychology")
-                    elif answer[1] == "feedback":
+                    if answer[1] == "feedback":
                         send_message(id,
                                      "Введите в следующем сообщении свои пожелания по улучшению бота. Они будут переданы разработчику. Если хотите отменить отправку, напишите 'Отмена'")
                         users[id].state = "Пожелания"
-                    elif answer[1] == "rules":
-                        create_keyboard(id, answer[0], "rules")
-                    elif answer[1] == "museums":
-                        create_keyboard(id, answer[0], "museums")
                     elif answer[1] == "maps":
-                        upload = vk_api.VkUpload(vk_session)
-                        file = upload.document("файлы/карты.pdf", "doc")
-                        send_message(id, answer[0], None, file)
+                        result = json.loads(requests.post(
+                            vk.docs.getMessagesUploadServer(type='doc', peer_id=id)[
+                                'upload_url'], files={'file': open('файлы/карты.pdf', 'rb')}).text)
+                        jsonAnswer = vk.docs.save(file=result['file'], title='title', tags=[])
+                        vk.messages.send(peer_id=id, message=answer[0], random_id=0,
+                                         attachment=f"doc{jsonAnswer['doc']['owner_id']}_{jsonAnswer['doc']['id']}")
+                        """upload = vk_api.VkUpload(vk_session)
+                        file = upload.document_message("файлы/карты.pdf")[0]
+                        owner_id = file['owner_id']
+                        doc_id = file['id']
+                        attachment = f'document{owner_id}_{doc_id}'
+                        post = {'user_id': id, 'random_id': 0, "attachment": attachment}
+                        post['message'] = answer[0]
+                        try:
+                            vk_session.method('messages.send', post)
+                        except BaseException as Ex:
+                            print(Ex)
+                            """
+                        # send_message(id, answer[0], None, file)
                     elif answer[1] == "metodichka":
                         upload = vk_api.VkUpload(vk_session)
                         file = upload.document("файлы/методичка_2022.pdf", "doc")
                         send_message(id, answer[0], None, file)
-                    elif answer[1] == "obhodnoy":
-                        create_keyboard(id, answer[0], "obhodnoy")
-                    elif answer[1] == "work":
-                        create_keyboard(id, answer[0], "work")
-                    elif answer[1] == "website":
-                        create_keyboard(id, answer[0], "website")
-                    elif answer[1] == "military":
-                        create_keyboard(id, answer[0], "military")
-                    elif answer[1] == "rectorate":
-                        create_keyboard(id, answer[0], "rectorate")
-                    elif answer[1] == "library":
-                        create_keyboard(id, answer[0], "library")
-                    elif answer[1] == "office":
-                        create_keyboard(id, answer[0], "office")
-                    elif answer[1] == "scholarship":
-                        create_keyboard(id, answer[0], "scholarship")
                     else:
-                        create_keyboard(id, answer[0])
+                        create_keyboard(id, answer[0], answer[1])

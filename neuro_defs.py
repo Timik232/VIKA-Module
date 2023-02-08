@@ -9,7 +9,6 @@ from sklearn.neural_network import MLPClassifier
 import random
 import json
 
-
 vk_session = vk_api.VkApi(token=token_api)
 vk = vk_session.get_api()
 
@@ -29,45 +28,33 @@ class UserInfo:
 
 
 def send_message(id, msg, stiker=None, attach=None):
-        try:
-            vk.messages.send(
-                user_id=id,
-                random_id=get_random_id(),
-                message=msg,
-                sticker_id=stiker,
-                attachment=attach
-            )
-        except BaseException:
-            print("ошибка, возможно человек добавил в чс")
-            return
+    try:
+        vk.messages.send(
+            user_id=id,
+            random_id=get_random_id(),
+            message=msg,
+            sticker_id=stiker,
+            attachment=attach
+        )
+    except BaseException:
+        print("ошибка, возможно человек добавил в чс")
+        return
 
 
 # на данный момент только одна клавиатура, но есть возможность создавать другие
 def create_keyboard(id, text, response="start"):
     try:
         keyboard = VkKeyboard(one_time=True)
-        if response == "start":
-            keyboard = VkKeyboard(one_time=False)
-            keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Карта Университета', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Рассылка', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Расписание пересдач', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Что ты умеешь?', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Пожелания по улучшению', color=VkKeyboardColor.PRIMARY)
-        elif response == "yaro":
+        if response == "not_that" or response == "help_me" or response == "callhuman" or response == "flood":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Ссылка на ВК', "https://vk.com/bramind002")
         elif response == "grifon":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Стикеры с грифоном в ТГ', "https://t.me/addstickers/rtumirea")
-        elif response == "psychology":
+        elif response == "psychology" or response == "danger" or response == "feedback_bad" or response == "motivation" or response == "feedback_good" or response == "feedback" or response == "psychologist":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button('Психологическая служба', "https://student.mirea.ru/psychological_service/staff/")
+            keyboard.add_openlink_button('Психологическая служба',
+                                         "https://student.mirea.ru/psychological_service/staff/")
         elif response == "map":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Навигатор', "https://ischemes.ru/group/rtu-mirea/vern78")
@@ -75,10 +62,12 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Устав', "https://www.mirea.ru/upload/medialibrary/d0e/Ustav-Novyy.pdf")
             keyboard.add_openlink_button('Правила внутреннего распорядка', "https://www.mirea.ru/docs/125641/")
-            keyboard.add_openlink_button('Этический кодекс', "https://student.mirea.ru/regulatory_documents/file/3f9468db49ffd14fe96c0d28d8c056bf.pdf")
+            keyboard.add_openlink_button('Этический кодекс',
+                                         "https://student.mirea.ru/regulatory_documents/file/3f9468db49ffd14fe96c0d28d8c056bf.pdf")
         elif response == "museums":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button('Подробнее о музеях', "https://www.mirea.ru/about/history-of-the-university/the-museum-mirea/")
+            keyboard.add_openlink_button('Подробнее о музеях',
+                                         "https://www.mirea.ru/about/history-of-the-university/the-museum-mirea/")
         elif response == "obhodnoy":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Про физкультуру', "https://student.mirea.ru/help/section/physical_education/")
@@ -102,7 +91,43 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button('СтудОфис', "https://student.mirea.ru/services/")
         elif response == "scholarship":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button('Размер стипендии', "https://student.mirea.ru/scholaship_support/scholarships/state_academic_support/")
+            keyboard.add_openlink_button('Размер стипендии',
+                                         "https://student.mirea.ru/scholaship_support/scholarships/state_academic_support/")
+        elif response == "social-money":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Материальная помощь', "https://vk.com/topic-42869722_48644800")
+            keyboard.add_openlink_button('Бланки', "https://student.mirea.ru/statement/")
+        elif response == "subsidy":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Вопросы по дотациям', "https://vk.com/@rtuprofkom-voprosy-po-dotaciyam")
+        elif response == "rzhd":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('РЖД-бонус', "https://vk.com/@rtuprofkom-rzhd-bonus-dlya-studentov")
+        elif response == "hostel" or response == "hostel-contest":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Подробнее об общежитиях', "https://student.mirea.ru/hostel/campus/")
+        elif response == "vuz" or response == "vuc":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('ВУЦ', "https://vuc.mirea.ru/")
+        elif response == "expedition":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Экспедиционный корпус', "https://vuc.mirea.ru/ekspeditsionnyy-korpus/")
+        elif response == "diving":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Дайвинг клуб', "https://vuc.mirea.ru/kluby/dayving/")
+        else:
+            keyboard = VkKeyboard(one_time=False)
+            keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Карта Университета', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Рассылка', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Расписание пересдач', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Что ты умеешь?', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Пожелания по улучшению', color=VkKeyboardColor.PRIMARY)
         vk.messages.send(
             user_id=id,
             random_id=get_random_id(),
@@ -181,7 +206,3 @@ def add_answer():
         with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
         print("Ответ был записан в файл. Продолжайте вводить")
-
-
-
-
