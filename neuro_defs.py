@@ -115,6 +115,12 @@ def create_keyboard(id, text, response="start"):
         elif response == "diving":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Дайвинг клуб', "https://vuc.mirea.ru/kluby/dayving/")
+        elif response == "metodichka":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button('Методичка первокурсника', "https://student.mirea.ru/help/file/metod_perv_2022.pdf")
+        elif response == "double-diploma":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Программа двойного диплома","https://www.mirea.ru/international-activities/training-and-internships/")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)

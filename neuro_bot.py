@@ -119,9 +119,5 @@ if __name__ == "__main__":
                             print(Ex)
                             """
                         # send_message(id, answer[0], None, file)
-                    elif answer[1] == "metodichka":
-                        upload = vk_api.VkUpload(vk_session)
-                        file = upload.document("файлы/методичка_2022.pdf", "doc")
-                        send_message(id, answer[0], None, file)
                     else:
                         create_keyboard(id, answer[0], answer[1])
