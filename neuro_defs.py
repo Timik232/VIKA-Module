@@ -127,9 +127,44 @@ def create_keyboard(id, text, response="start"):
         elif response == "other-language":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Ссылка","https://language.mirea.ru/")
-         elif response == "business":
+        elif response == "business" or response == "softskill":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Ссылка на группу","https://vk.com/ntv.mirea")   
+            keyboard.add_openlink_button("Ссылка на группу", "https://vk.com/ntv.mirea")
+        elif response == "science":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Научные сообщества", "https://student.mirea.ru/student_scientific_society/")
+            keyboard.add_openlink_button("Группа в ВК", "https://vk.com/mirea_smu")
+        elif response == "constructor" or response == "accelerator":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Акселератор", "https://project.mirea.ru/")
+        elif response == "uvisr":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("УВИСР", "https://student.mirea.ru/")
+        elif response == "student-union":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа в ВК", "https://vk.com/sumirea")
+        elif response == "media-school":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Медиашкола", "https://vk.com/mediaschool_sumirea")
+        elif response == "volunteer":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Волонтёрский центр", "https://vk.com/vcrtumirea")
+        elif response == "atmosfera":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Атмосфера", "https://vk.com/atmosfera")
+        elif response == "apriori":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Априори", "https://vk.com/apriori.moscow")
+        elif response == "counselor":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Атмосфера", "https://vk.com/atmosfera")
+            keyboard.add_openlink_button("Априори", "https://vk.com/apriori.moscow")
+        elif response == "rescue" or response == "rescue-contacts":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа в ВК", "https://vk.com/csovsks")
+        elif response == "vector":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Вектор", "https://vk.com/vector_mirea")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -197,27 +232,77 @@ def add_answer():
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
-        print("Введите название интента")
-        intent = input()
-        print("Вводите вопросы, чтобы закончить, введите 0")
-        flag = False
-        while True:
-            question = input()
-
-            if question == "0":
+        print("Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n")
+        choice = input()
+        if choice == "1":
+            print(len(data))
+        elif choice == "2":
+            for i in data:
+                print(i)
+        elif choice == "3":
+            print("Введите название темы")
+            intent = input()
+            print("Вводите вопросы, чтобы закончить, введите 0")
+            flag = False
+            while True:
+                question = input()
+                if question == "0":
+                    break
+                if not flag:
+                    data[intent] = {}
+                    data[intent]['examples'] = []
+                    data[intent]['responses'] = []
+                    flag = True
+                data[intent]['examples'].append(question)
+            print("Вводите ответы, чтобы закончить, введите 0")
+            while True:
+                answer = input()
+                if answer == "0":
+                    break
+                data[intent]['responses'].append(answer)
+            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
+            end = input()
+            end = end.lower()
+            if end == "n" or end == "no" or end == "нет":
                 break
-            if not flag:
-                data[intent] = {}
-                data[intent]['examples'] = []
-                data[intent]['responses'] = []
-                flag = True
-            data[intent]['examples'].append(question)
-        print("Вводите ответы, чтобы закончить, введите 0")
-        while True:
-            answer = input()
-            if answer == "0":
-                break
-            data[intent]['responses'].append(answer)
-        with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-        print("Ответ был записан в файл. Продолжайте вводить")
+            else:
+                print("Продолжайте вводить")
+        elif choice == "4":
+            print("Введите название темы")
+            intent = input()
+            del data[intent]
+            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            print("Тема была удалена")
+        elif choice == "5":
+            print("Введите название темы")
+            intent = input()
+            print(data[intent])
+        elif choice == "6":
+            print("Введите название темы")
+            intent = input()
+            print("Вводите ответы, чтобы закончить, введите 0")
+            while True:
+                answer = input()
+                if answer == "0":
+                    break
+                data[intent]['responses'].append(answer)
+            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            print("Ответ был записан в файл.")
+        elif choice == "7":
+            print("Введите название темы")
+            intent = input()
+            print("Вводите вопросы, чтобы закончить, введите 0")
+            while True:
+                question = input()
+                if question == "0":
+                    break
+                data[intent]['examples'].append(question)
+            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            print("Вопросы были записаны в файл.")
+        else:
+            print("Неверный пункт меню")
