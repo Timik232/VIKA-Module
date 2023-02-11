@@ -1,7 +1,7 @@
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 import vk_api
-from private_api import token_api  # токен который не должен быть у всех,поэтому вынес в отдельную функцию
+from private_api import token_api  # токен который не должен быть у всех, поэтому вынес в отдельный файл.
 import nltk
 import re
 from sklearn.feature_extraction.text import CountVectorizer
@@ -18,8 +18,8 @@ vk = vk_session.get_api()
 class UserInfo:
     def __init__(self):
         # предложение запоминать группу пользователя, чтобы не вводить её каждый раз
-        self.name = ""  # заглушка чтобы отправлять сообщения создателю
         self.group = ""
+        self.like = 0  # нравится/не нравится бот
         self.state = ""  # состояние пользователя, чтобы понимать, что ему нужно сделать
         self.sending = []
         # условно изначальные рассылки присвоить False, чтобы не рассылал, сделано скорее как заглушка
@@ -38,6 +38,22 @@ def send_message(id, msg, stiker=None, attach=None):
         )
     except BaseException:
         print("ошибка, возможно человек добавил в чс")
+        return
+
+
+def send_photo(user_id, img_req, message = None):
+    upload = vk_api.VkUpload(vk_session)
+    photo = upload.photo_messages(img_req)[0]
+    owner_id = photo['owner_id']
+    photo_id = photo['id']
+    attachment = f'photo{owner_id}_{photo_id}'
+    post = {'user_id': user_id, 'random_id': 0, "attachment": attachment}
+    if message != None:
+        post['message'] = message
+    try:
+        vk_session.method('messages.send', post)
+    except BaseException:
+        send_message(id, "Не удалось отправить картинку")
         return
 
 
@@ -120,13 +136,13 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button('Методичка первокурсника', "https://student.mirea.ru/help/file/metod_perv_2022.pdf")
         elif response == "double-diploma":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Программа двойного диплома","https://www.mirea.ru/international-activities/training-and-internships/")
+            keyboard.add_openlink_button("Программа двойного диплома", "https://www.mirea.ru/international-activities/training-and-internships/")
         elif response == "car":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Подготовка водителей","https://www.mirea.ru/about/the-structure-of-the-university/educational-scientific-structural-unit/driving-school-mstu-mirea/")
+            keyboard.add_openlink_button("Подготовка водителей", "https://www.mirea.ru/about/the-structure-of-the-university/educational-scientific-structural-unit/driving-school-mstu-mirea/")
         elif response == "other-language":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Ссылка","https://language.mirea.ru/")
+            keyboard.add_openlink_button("Ссылка", "https://language.mirea.ru/")
         elif response == "business" or response == "softskill":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Ссылка на группу", "https://vk.com/ntv.mirea")
@@ -165,6 +181,65 @@ def create_keyboard(id, text, response="start"):
         elif response == "vector":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Вектор", "https://vk.com/vector_mirea")
+        elif response == "rtuitlab":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("RTUITlab", "https://vk.com/rtuitlab")
+        elif response == "group-it":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИИТ в ВК", "https://vk.com/it_sumirea")
+        elif response == "group-iii":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИИИ в ВК", "https://vk.com/iii_sumirea")
+        elif response == "group-iri":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИРИ в ВК", "https://vk.com/iri_sumirea")
+        elif response == "group-ikb":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИКБ в ВК", "https://vk.com/ikb_sumirea")
+        elif response == "group-itu":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИТУ в ВК", "https://vk.com/itu_sumirea")
+        elif response == "group-itht":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИТХТ в ВК", "https://vk.com/itht_sumirea")
+        elif response == "group-iptip":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ИПТИП в ВК", "https://vk.com/iptip__sumirea")
+        elif response == "group-kpk":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа КПК в ВК", "https://vk.com/college_sumirea")
+        elif response == "rating":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_button("Лайк👍", color=VkKeyboardColor.POSITIVE)
+            keyboard.add_button("Дизлайк👎", color=VkKeyboardColor.NEGATIVE)
+        elif response == "work":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Центр Карьеры", "https://vk.com/careercenterrtumirea")
+        elif response == "graduate-union":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Ассоциация выпускников", "https://student.mirea.ru/graduate/")
+        elif response == "radio":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Радиорубка и Радиолаб", "https://vk.com/rtu.radio")
+        elif response == "admin":
+            keyboard = VkKeyboard(one_time=False)
+            keyboard.add_button("1.Вывести количество тем", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("2.Вывести все темы", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("3.Добавить тему", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("4.Удалить тему", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("5.Вывести всю информацию по теме", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("6.Добавить ответ к теме", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("7.Добавить вопрос к теме", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("8.Вывести количество пользователей", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("9.Вывести рейтинг", color=VkKeyboardColor.PRIMARY)
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -178,6 +253,7 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_button('Что ты умеешь?', color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
             keyboard.add_button('Пожелания по улучшению', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button('Оценить бота', color=VkKeyboardColor.PRIMARY)
         vk.messages.send(
             user_id=id,
             random_id=get_random_id(),
@@ -228,81 +304,104 @@ def answering(text, model_mlp, data, vectorizer):
     return full_answer
 
 
-def add_answer():
+
+def add_answer(users):
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
-        print("Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n")
+        print("Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n8.Вывести количество пользователей\n9.Вывести рейтинг")
         choice = input()
         if choice == "1":
-            print(len(data))
+            print("Количество тем: " + str(len(data)))
         elif choice == "2":
             for i in data:
                 print(i)
         elif choice == "3":
             print("Введите название темы")
             intent = input()
-            print("Вводите вопросы, чтобы закончить, введите 0")
-            flag = False
-            while True:
-                question = input()
-                if question == "0":
-                    break
-                if not flag:
-                    data[intent] = {}
-                    data[intent]['examples'] = []
-                    data[intent]['responses'] = []
-                    flag = True
-                data[intent]['examples'].append(question)
-            print("Вводите ответы, чтобы закончить, введите 0")
-            while True:
-                answer = input()
-                if answer == "0":
-                    break
-                data[intent]['responses'].append(answer)
-            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
-            end = input()
-            end = end.lower()
-            if end == "n" or end == "no" or end == "нет":
-                break
+            if intent in data:
+                print("Такая тема уже существует")
             else:
-                print("Продолжайте вводить")
+                print("Вводите вопросы, чтобы закончить, введите 0")
+                flag = False
+                while True:
+                    question = input()
+                    if question == "0":
+                        break
+                    if not flag:
+                        data[intent] = {}
+                        data[intent]['examples'] = []
+                        data[intent]['responses'] = []
+                        flag = True
+                    data[intent]['examples'].append(question)
+                print("Вводите ответы, чтобы закончить, введите 0")
+                while True:
+                    answer = input()
+                    if answer == "0":
+                        break
+                    data[intent]['responses'].append(answer)
+                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
+                end = input()
+                end = end.lower()
+                if end == "n" or end == "no" or end == "нет":
+                    break
+                else:
+                    print("Продолжайте вводить")
         elif choice == "4":
             print("Введите название темы")
             intent = input()
-            del data[intent]
-            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            print("Тема была удалена")
+            if intent in data:
+                del data[intent]
+                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                print("Тема была удалена")
+            else:
+                print("Тема не найдена")
         elif choice == "5":
             print("Введите название темы")
             intent = input()
-            print(data[intent])
+            if intent in data:
+                print(data[intent])
+            else:
+                print("Тема не найдена")
         elif choice == "6":
             print("Введите название темы")
             intent = input()
-            print("Вводите ответы, чтобы закончить, введите 0")
-            while True:
-                answer = input()
-                if answer == "0":
-                    break
-                data[intent]['responses'].append(answer)
-            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            print("Ответ был записан в файл.")
+            if intent in data:
+                print("Вводите ответы, чтобы закончить, введите 0")
+                while True:
+                    answer = input()
+                    if answer == "0":
+                        break
+                    data[intent]['responses'].append(answer)
+                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                print("Ответ был записан в файл.")
+            else:
+                print("Тема не найдена")
         elif choice == "7":
             print("Введите название темы")
             intent = input()
-            print("Вводите вопросы, чтобы закончить, введите 0")
-            while True:
-                question = input()
-                if question == "0":
-                    break
-                data[intent]['examples'].append(question)
-            with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-            print("Вопросы были записаны в файл.")
+            if intent in data:
+                print("Вводите вопросы, чтобы закончить, введите 0")
+                while True:
+                    question = input()
+                    if question == "0":
+                        break
+                    data[intent]['examples'].append(question)
+                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+                print("Вопросы были записаны в файл.")
+            else:
+                print("Тема не найдена")
+        elif choice == "8":
+            print("Количество пользователей бота: " + str(len(users)))
+        elif choice == "9":
+            rate = 0
+            for i in users:
+                rate += users[i].like
+            print("Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
         else:
             print("Неверный пункт меню")
