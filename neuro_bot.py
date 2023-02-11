@@ -251,7 +251,7 @@ if __name__ == "__main__":
                                      "переданы разработчику. Если хотите отменить отправку, напишите 'Отмена'")
                         users[id].state = "Пожелания"
                     elif answer[1] == "panda":
-                        send_photo(id, "файлы/панда.jpg", answer[0])
+                        send_photo(id, "файлы/panda.jpg", answer[0])
                     elif answer[1] == "like":
                         users[id].like = 1
                         with open('mirea_users.pickle', 'wb') as f:
