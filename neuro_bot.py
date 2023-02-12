@@ -13,18 +13,19 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.utils import get_random_id
 from vk_api.bot_longpoll import VkBotEventType
-from private_api import password  # пароль для админ панели
 
-def is_intent(id, intent, data):
+
+def is_intent(id, intent, data, is_new = False):
     if intent in data:
         return True
     else:
-        send_message(id, "Тема не найдена")
+        if not is_new:
+            send_message(id, "Тема не найдена")
         return False
 
 
 def is_canceled(id, msg):
-    if text_match(msg, 'отмена'):
+    if text_match(msg, 'отмена') or text_match(msg, 'отменить') or text_match(msg, 'назад'):
         send_message(id, "Отменено")
         return True
     else:
@@ -101,55 +102,22 @@ if __name__ == "__main__":
                     send_message(id, "Спасибо за ваше пожелание!")
             elif users[id].state == "waiting":
                 users[id].state = ""
-            elif users[id].state == "password":
-                if text_match(message, "отмена"):
-                    users[id].state = "waiting"
-                    send_message(id, "Ввод отменён")
-                elif event.text == password:
-                    send_message(id, "Доступ получен, чтобы выйти из администраторского режима напишите 'выход'")
-                    users[id].state = "admin"
-                    create_keyboard(id, "Выберите пункт меню:\n\n\n\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n8.Вывести количество пользователей\n9.Вывести рейтинг", "admin")
             elif users[id].state == "admin":
-                if text_match(message, "выход"):
+                if text_match(message, "выход") or text_match(message, "10.Выход"):
                     users[id].state = "waiting"
                     create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
-                if text_match(message, "1.Вывести количество тем"):
+                elif text_match(message, "1.Вывести количество тем"):
                     send_message(id, "Количество тем: " + str(len(data)))
+                    create_keyboard(id, "Выберите пункт меню", "admin")
                 elif text_match(message,"2.Вывести все темы"):
                     smg = ""
                     for i in data:
                         smg += i + "\n"
                     send_message(id, smg)
-                elif text_match(message, "3.Добавить тему"):
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+                elif event.text == "3.Добавить тему":
                     send_message(id, "Введите название темы")
-                    intent = input()
-                    print("Вводите вопросы, чтобы закончить, введите 0")
-                    flag = False
-                    while True:
-                        question = input()
-                        if question == "0":
-                            break
-                        if not flag:
-                            data[intent] = {}
-                            data[intent]['examples'] = []
-                            data[intent]['responses'] = []
-                            flag = True
-                        data[intent]['examples'].append(question)
-                    print("Вводите ответы, чтобы закончить, введите 0")
-                    while True:
-                        answer = input()
-                        if answer == "0":
-                            break
-                        data[intent]['responses'].append(answer)
-                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                        json.dump(data, f, ensure_ascii=False, indent=4)
-                    print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
-                    end = input()
-                    end = end.lower()
-                    if end == "n" or end == "no" or end == "нет":
-                        break
-                    else:
-                        print("Продолжайте вводить")
+                    users[id].state = "add_intent"
                 elif text_match(message, "4.Удалить тему"):
                     send_message(id, "Введите название темы")
                     users[id].state = "delete"
@@ -158,92 +126,144 @@ if __name__ == "__main__":
                     users[id].state = "info"
                 elif text_match(message, "6.Добавить ответ к теме"):
                     send_message(id, "Введите название темы")
-                    users[id].state = "add_answer"
+                    users[id].state = "check_intent add_answer"
                 elif text_match(message, "7.Добавить вопрос к теме"):
-                    print("Введите название темы")
-                    intent = input()
-                    print("Вводите вопросы, чтобы закончить, введите 0")
-                    while True:
-                        question = input()
-                        if question == "0":
-                            break
-                        data[intent]['examples'].append(question)
-                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                        json.dump(data, f, ensure_ascii=False, indent=4)
-                    print("Вопросы были записаны в файл.")
-                elif text_match(message, "8.Количество пользователей бота"):
+                    send_message(id, "Введите название темы")
+                    users[id].state = "check_intent add_question"
+                elif text_match(message, "8.Вывести количество пользователей"):
                     send_message(id, "Количество пользователей бота: " + str(len(users)))
+                    create_keyboard(id, "Выберите пункт меню", "admin")
                 elif text_match(message, "9.Вывести рейтинг бота"):
                     rate = 0
                     for i in users:
                         rate += users[i].like
                     send_message(id, "Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
+                    create_keyboard(id, "Выберите пункт меню", "admin")
                 else:
                     send_message(id, "Неверный пункт меню")
+                    create_keyboard(id, "Выберите пункт меню", "admin")
             elif users[id].state == "delete":
+                print(1)
                 users[id].state = "admin"
                 if is_canceled(id, message):
-                    continue
+                    create_keyboard(id, "Выберите пункт меню", "admin")
                 elif is_intent(id, event.text, data):
                     del data[event.text]
                     with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)
                     send_message(id, "Тема была удалена")
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+                else:
+                    create_keyboard(id, "Выберите пункт меню", "admin")
             elif users[id].state == "info":
                 users[id].state = "admin"
                 if is_canceled(id, message):
-                    continue
+                    create_keyboard(id, "Выберите пункт меню", "admin")
                 elif is_intent(id, event.text, data):
                     send_message(id, data[event.text])
-            elif users[id].state == "add_answer":
-                users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+            elif "check_intent" in users[id].state:
                 if is_canceled(id, message):
-                    continue
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
                 elif is_intent(id, event.text, data):
-                    send_message(id, "Вводите ответы, чтобы закончить, введите 0")
-                    users[id].state = "add_answer2" + " " + event.text
+                    if users[id].state.split()[1] == "add_answer":
+                        send_message(id, "Вводите ответы, чтобы закончить, введите 0")
+                        users[id].state = "add_answer2" + " " + event.text
+                    elif users[id].state.split()[1] == "add_question":
+                        send_message(id, "Вводите вопросы, чтобы закончить, введите 0")
+                        users[id].state = "add_question2" + " " + event.text
+                else:
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
             elif "add_answer2" in users[id].state:
                 intent = users[id].state.split()[1]
                 answer = event.text
                 if answer == "0":
-                    users[id].state = "finish_answer"
-                data[intent]['responses'].append(answer)
-            elif users[id].state == "finish_answer":
-                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=4)
-                send_message(id, "Ответ был записан в файл.")
-                users[id].state = "admin"
+                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                        json.dump(data, f, ensure_ascii=False, indent=4)
+                    send_message(id, "Ответ был записан в файл.")
+                    if len(users[id].state.split()) == 2:
+                        users[id].state = "admin"
+                        create_keyboard(id, "Выберите пункт меню", "admin")
+                    else:
+                        send_message(id, "Тема закончена. Ввести еще одну тему? (да/нет)")
+                        users[id].state = "is_end"
+                else:
+                    data[intent]['responses'].append(answer)
+                    send_message(id, "Дальше")
+            elif "add_question2" in users[id].state:
+                intent = users[id].state.split()[1]
+                question = event.text
+                if question == "0":
+                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                        json.dump(data, f, ensure_ascii=False, indent=4)
+                    send_message(id, "Вопросы были записаны в файл.")
+                    if len(users[id].state.split()) == 2:
+                        users[id].state = "admin"
+                        create_keyboard(id, "Выберите пункт меню", "admin")
+                    else:
+                        users[id].state = "add_answer2" + " " + intent + " end"
+                        send_message(id, "Вводите ответы, чтобы закончить, введите 0")
+                else:
+                    data[intent]['examples'].append(question)
+                    send_message(id, "Дальше")
+            elif users[id].state == "add_intent":
+                if is_canceled(id, message):
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+                else:
+                    intent = event.text
+                    if is_intent(id, intent, data, True):
+                        send_message(id, "Такая тема уже есть")
+                        users[id].state = "admin"
+                    else:
+                        data[intent] = {}
+                        data[intent]['examples'] = []
+                        data[intent]['responses'] = []
+                        send_message(id, "Вводите вопросы, чтобы закончить, введите 0")
+                    users[id].state = "add_question2" + " " + intent + " end"
+            elif users[id].state == "is_end":
+                if text_match(message, "да") or text_match(message, "yes"):
+                    send_message(id, "Вводите тему")
+                    users[id].state = "add_intent"
+                elif text_match(message, "нет") or text_match(message, "no"):
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
 
-
-            if message == "админпанель" or message == "админ панель":
-                send_message(id, "Введите пароль")
-                users[id].state = "password"
-            elif text_match(message, "расписание"):
-                send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание в основной "
-                                 "версии ВИКА")
-            elif text_match(message, "карта Университета"):
-                create_keyboard(id, "Используйте навигатор по Университету", "map")
-            elif text_match(message, "рассылка"):
-                send_message(id, "В данном боте тестируется только система ответов на вопросы, рассылка в основной "
-                                 "версии ВИКА")
-            elif text_match(message, "Расписание пересдач"):
-                send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в "
-                                 "основной версии ВИКА")
-            elif text_match(message, "Что ты умеешь"):
-                send_message(id, "Напишите мне любой вопрос, связанный с нашим университетом, и я постараюсь найти "
-                                 "ответ на него. Учтите, что я не живой "
-                                 "человек и могу ошибаться, однако в этой версии база ответов значительно расширена, а система "
-                                 "распознавания вопросов улучшена.")
-            elif text_match(message, "Пожелания по улучшению"):
-                send_message(id, "Введите в следующем сообщении свои пожелания по улучшению бота(в том числе можно "
-                                 "указать вопрос, на который вы хотели бы, чтобы бот мог отвечать. Если знаете, "
-                                 "то ещё и сразу ответ). Они будут переданы разработчику. Если хотите отменить "
-                                 "отправку, напишите 'Отмена'")
-                users[id].state = "Пожелания"
-            elif text_match(message, "Оценить бота"):
-                create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
-            else:
-                if users[id].state == "":
+            if users[id].state == "":
+                if message == "админпанель" or message == "админ панель":
+                    if id == 286288768:
+                        send_message(id, "Доступ получен, чтобы выйти из администраторского режима напишите: 'выход'")
+                        users[id].state = "admin"
+                        create_keyboard(id, "Выберите пункт меню", "admin")
+                    else:
+                        send_message(id, "У вас нет доступа к администраторскому режиму")
+                elif text_match(message, "расписание"):
+                    send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание в основной "
+                                     "версии ВИКА")
+                elif text_match(message, "карта Университета"):
+                    create_keyboard(id, "Используйте навигатор по Университету", "map")
+                elif text_match(message, "рассылка"):
+                    send_message(id, "В данном боте тестируется только система ответов на вопросы, рассылка в основной "
+                                     "версии ВИКА")
+                elif text_match(message, "Расписание пересдач"):
+                    send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в "
+                                     "основной версии ВИКА")
+                elif text_match(message, "Что ты умеешь"):
+                    send_message(id, "Напишите мне любой вопрос, связанный с нашим университетом, и я постараюсь найти "
+                                     "ответ на него. Учтите, что я не живой "
+                                     "человек и могу ошибаться, однако в этой версии база ответов значительно расширена, а система "
+                                     "распознавания вопросов улучшена.")
+                elif text_match(message, "Пожелания по улучшению"):
+                    send_message(id, "Введите в следующем сообщении свои пожелания по улучшению бота(в том числе можно "
+                                     "указать вопрос, на который вы хотели бы, чтобы бот мог отвечать. Если знаете, "
+                                     "то ещё и сразу ответ). Они будут переданы разработчику. Если хотите отменить "
+                                     "отправку, напишите 'Отмена'")
+                    users[id].state = "Пожелания"
+                elif text_match(message, "Оценить бота"):
+                    create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
+                else:
                     answer = answering(message, model_mlp, data, vectorizer)
                     if answer[1] == "feedback":
                         send_message(id,
@@ -256,14 +276,17 @@ if __name__ == "__main__":
                         users[id].like = 1
                         with open('mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
+                        create_keyboard(id, answer[0])
                     elif answer[1] == "dislike":
                         users[id].like = -1
                         with open('mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
+                        create_keyboard(id, answer[0])
                     elif answer[1] == "none":
                         users[id].like = 0
                         with open('mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
+                        create_keyboard(id, answer[0])
                     elif answer[1] == "maps":
                         result = json.loads(requests.post(
                             vk.docs.getMessagesUploadServer(type='doc', peer_id=id)[

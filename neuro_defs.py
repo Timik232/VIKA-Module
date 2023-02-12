@@ -222,7 +222,7 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Радиорубка и Радиолаб", "https://vk.com/rtu.radio")
         elif response == "admin":
-            keyboard = VkKeyboard(one_time=False)
+            keyboard = VkKeyboard(one_time=True)
             keyboard.add_button("1.Вывести количество тем", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
             keyboard.add_button("2.Вывести все темы", color=VkKeyboardColor.PRIMARY)
@@ -240,6 +240,8 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_button("8.Вывести количество пользователей", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
             keyboard.add_button("9.Вывести рейтинг", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("10.Выход", color=VkKeyboardColor.NEGATIVE)
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
