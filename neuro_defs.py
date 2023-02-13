@@ -1,3 +1,5 @@
+import pickle
+
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 import vk_api
@@ -8,6 +10,13 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
 import random
 import json
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, f1_score
+from textblob import TextBlob
+
+# spell = SpellChecker()
+
 
 vk_session = vk_api.VkApi(token=token_api)
 vk = vk_session.get_api()
@@ -55,6 +64,41 @@ def send_photo(user_id, img_req, message = None):
     except BaseException:
         send_message(id, "Не удалось отправить картинку")
         return
+
+
+def make_neuronetwork():
+    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+        data = json.load(f)
+    X = []
+    y = []
+
+    for name in data:
+        for question in data[name]['examples']:
+            X.append(question)
+            y.append(name)
+        for phrase in data[name]['responses']:
+            X.append(phrase)
+            y.append(name)
+
+    # векторизируем файлы и обучаем модель
+
+    vectorizer = CountVectorizer()
+    X_vec = vectorizer.fit_transform(X)
+    model_mlp = MLPClassifier(hidden_layer_sizes=322, activation='relu', solver='adam', learning_rate='adaptive',
+                              max_iter=1500)
+    model_mlp.fit(X_vec, y)
+    y_pred = model_mlp.predict(X_vec)
+    print("точность " + str(accuracy_score(y, y_pred)))
+    print("f1 " + str(f1_score(y, y_pred, average='macro')))
+    with open('model.pkl', 'wb') as f:
+        pickle.dump(model_mlp, f)
+    with open('vector.pkl', 'wb') as f:
+        pickle.dump(vectorizer, f)
+    neuro = []
+    neuro.append(model_mlp)
+    neuro.append(vectorizer)
+    print("Обучено")
+    return neuro
 
 
 # на данный момент только одна клавиатура, но есть возможность создавать другие
@@ -242,6 +286,10 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_button("9.Вывести рейтинг", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
             keyboard.add_button("10.Выход", color=VkKeyboardColor.NEGATIVE)
+        elif response == "yesno":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_button("Да", color=VkKeyboardColor.POSITIVE)
+            keyboard.add_button("Нет", color=VkKeyboardColor.NEGATIVE)
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -254,7 +302,7 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_line()
             keyboard.add_button('Что ты умеешь?', color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button('Пожелания по улучшению', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button('Обратная связь', color=VkKeyboardColor.PRIMARY)
             keyboard.add_button('Оценить бота', color=VkKeyboardColor.PRIMARY)
         vk.messages.send(
             user_id=id,
@@ -289,6 +337,9 @@ users = {}
 
 
 def get_intent(text, model_mlp, vectorizer):
+    # corrected_text = spell.correction(text)
+    corrected_text = TextBlob(text).correct()
+    text = str(corrected_text)
     text_vec = vectorizer.transform([text])
     return model_mlp.predict(text_vec)[0]
 
@@ -311,7 +362,7 @@ def add_answer(users):
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
-        print("Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n8.Вывести количество пользователей\n9.Вывести рейтинг")
+        print("Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n8.Вывести количество пользователей\n9.Вывести рейтинг\n10.Переобучить модель")
         choice = input()
         if choice == "1":
             print("Количество тем: " + str(len(data)))
@@ -405,5 +456,7 @@ def add_answer(users):
             for i in users:
                 rate += users[i].like
             print("Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
+        elif choice == "10":
+            make_neuronetwork()
         else:
             print("Неверный пункт меню")

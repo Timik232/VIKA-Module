@@ -5,9 +5,6 @@ import requests
 import urllib.request
 import vk_api
 from neuro_defs import *
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score, f1_score
 from threading import Thread
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
@@ -33,36 +30,11 @@ def is_canceled(id, msg):
 
 
 if __name__ == "__main__":
+    print(text_match("пуудж", "кудж"))
     if not os.path.isfile('model.pkl'):
-        with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
-            data = json.load(f)
-        X = []
-        y = []
-
-        for name in data:
-            for question in data[name]['examples']:
-                X.append(question)
-                y.append(name)
-            for phrase in data[name]['responses']:
-                X.append(phrase)
-                y.append(name)
-
-        # векторизируем файлы и обучаем модель
-
-        vectorizer = CountVectorizer()
-        X_vec = vectorizer.fit_transform(X)
-        model_mlp = MLPClassifier(hidden_layer_sizes=300, activation='relu', solver='adam', learning_rate='adaptive',
-                                  max_iter=1500)
-        model_mlp.fit(X_vec, y)
-        y_pred = model_mlp.predict(X_vec)
-        print("точность " + str(accuracy_score(y, y_pred)))
-        print("f1 " + str(f1_score(y, y_pred, average='macro')))
-        with open('model.pkl', 'wb') as f:
-            pickle.dump(model_mlp, f)
-        with open('vector.pkl', 'wb') as f:
-            pickle.dump(vectorizer, f)
-
-        print("Обучено")
+        neuro = make_neuronetwork()
+        model_mlp = neuro[0]
+        vectorizer = neuro[1]
     else:
         with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
             data = json.load(f)
@@ -121,13 +93,13 @@ if __name__ == "__main__":
                 elif text_match(message, "4.Удалить тему"):
                     send_message(id, "Введите название темы")
                     users[id].state = "delete"
-                elif text_match(message, "5.Вывести всю информацию по теме"):
+                elif event.text == "5.Вывести всю информацию по теме":
                     send_message(id,"Введите название темы")
                     users[id].state = "info"
-                elif text_match(message, "6.Добавить ответ к теме"):
+                elif event.text == "6.Добавить ответ к теме":
                     send_message(id, "Введите название темы")
                     users[id].state = "check_intent add_answer"
-                elif text_match(message, "7.Добавить вопрос к теме"):
+                elif event.text ==  "7.Добавить вопрос к теме":
                     send_message(id, "Введите название темы")
                     users[id].state = "check_intent add_question"
                 elif text_match(message, "8.Вывести количество пользователей"):
@@ -139,11 +111,14 @@ if __name__ == "__main__":
                         rate += users[i].like
                     send_message(id, "Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
                     create_keyboard(id, "Выберите пункт меню", "admin")
+                elif text_match(message, "Переобучить модель"):
+                    create_keyboard(id, "Вы уверены? Это может знаять значительное время (да/нет)", "yesno")
+                    users[id].state = "retrain"
                 else:
                     send_message(id, "Неверный пункт меню")
                     create_keyboard(id, "Выберите пункт меню", "admin")
+
             elif users[id].state == "delete":
-                print(1)
                 users[id].state = "admin"
                 if is_canceled(id, message):
                     create_keyboard(id, "Выберите пункт меню", "admin")
@@ -187,7 +162,7 @@ if __name__ == "__main__":
                         users[id].state = "admin"
                         create_keyboard(id, "Выберите пункт меню", "admin")
                     else:
-                        send_message(id, "Тема закончена. Ввести еще одну тему? (да/нет)")
+                        create_keyboard(id, "Тема закончена. Ввести еще одну тему? (да/нет)", "yesno")
                         users[id].state = "is_end"
                 else:
                     data[intent]['responses'].append(answer)
@@ -230,6 +205,19 @@ if __name__ == "__main__":
                 elif text_match(message, "нет") or text_match(message, "no"):
                     users[id].state = "admin"
                     create_keyboard(id, "Выберите пункт меню", "admin")
+            elif users[id].state == "retrain":
+                if text_match(message, "да") or text_match(message, "yes"):
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+                    neuro = make_neuronetwork()
+                    model_mlp = neuro[0]
+                    vectorizer = neuro[1]
+                    send_message(id, "Нейросеть переобучена")
+                else:
+                    send_message(id, "Отменено")
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+
 
             if users[id].state == "":
                 if message == "админпанель" or message == "админ панель":
@@ -247,7 +235,7 @@ if __name__ == "__main__":
                 elif text_match(message, "рассылка"):
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, рассылка в основной "
                                      "версии ВИКА")
-                elif text_match(message, "Расписание пересдач"):
+                elif event.text == "Расписание пересдач":
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в "
                                      "основной версии ВИКА")
                 elif text_match(message, "Что ты умеешь"):
@@ -255,7 +243,7 @@ if __name__ == "__main__":
                                      "ответ на него. Учтите, что я не живой "
                                      "человек и могу ошибаться, однако в этой версии база ответов значительно расширена, а система "
                                      "распознавания вопросов улучшена.")
-                elif text_match(message, "Пожелания по улучшению"):
+                elif text_match(message, "Обратная связь"):
                     send_message(id, "Введите в следующем сообщении свои пожелания по улучшению бота(в том числе можно "
                                      "указать вопрос, на который вы хотели бы, чтобы бот мог отвечать. Если знаете, "
                                      "то ещё и сразу ответ). Они будут переданы разработчику. Если хотите отменить "
