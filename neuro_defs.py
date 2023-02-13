@@ -13,9 +13,23 @@ import json
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, f1_score
-from textblob import TextBlob
+import nltk
 
-# spell = SpellChecker()
+nltk.download('punkt')
+nltk.download('russian')
+
+from nltk.tokenize import word_tokenize
+from nltk.corpus import russian
+
+word_list = set(russian.words())
+
+def spell_check(text):
+    misspelled_words = []
+    tokenized_words = word_tokenize(text, language='russian')
+    for word in tokenized_words:
+        if word.lower() not in word_list:
+            misspelled_words.append(word)
+    return misspelled_words
 
 
 vk_session = vk_api.VkApi(token=token_api)
@@ -111,7 +125,7 @@ def create_keyboard(id, text, response="start"):
         elif response == "grifon":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Стикеры с грифоном в ТГ', "https://t.me/addstickers/rtumirea")
-        elif response == "psychology" or response == "danger" or response == "feedback_bad" or response == "motivation" or response == "feedback_good" or response == "feedback" or response == "psychologist":
+        elif response == "psychology" or response == "danger" or response == "feedback_bad" or response == "motivation" or response == "psycho" or response == "psychologist":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Психологическая служба',
                                          "https://student.mirea.ru/psychological_service/staff/")
@@ -337,9 +351,10 @@ users = {}
 
 
 def get_intent(text, model_mlp, vectorizer):
-    # corrected_text = spell.correction(text)
-    corrected_text = TextBlob(text).correct()
-    text = str(corrected_text)
+    # corrected_text = spell.candidates(text)
+    # corrected_text = TextBlob(text).correct()
+    text = spell_check(text)
+    print(text)
     text_vec = vectorizer.transform([text])
     return model_mlp.predict(text_vec)[0]
 
