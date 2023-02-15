@@ -13,23 +13,10 @@ import json
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, f1_score
-import nltk
+from spellchecker import SpellChecker
 
-nltk.download('punkt')
-nltk.download('russian')
 
-from nltk.tokenize import word_tokenize
-from nltk.corpus import russian
-
-word_list = set(russian.words())
-
-def spell_check(text):
-    misspelled_words = []
-    tokenized_words = word_tokenize(text, language='russian')
-    for word in tokenized_words:
-        if word.lower() not in word_list:
-            misspelled_words.append(word)
-    return misspelled_words
+dictionary = SpellChecker(language='ru')
 
 
 vk_session = vk_api.VkApi(token=token_api)
@@ -63,15 +50,30 @@ def send_message(id, msg, stiker=None, attach=None):
         print("ошибка, возможно человек добавил в чс")
         return
 
+def send_document(user_id, doc_req, message=None):
+    upload = vk.VkUpload(vk_session)
+    document = upload.document_message(doc_req)[0]
+    print(document)
+    owner_id = document['owner_id']
+    doc_id = document['id']
+    attachment = f'doc{owner_id}_{doc_id}'
+    post = {'user_id': user_id, 'random_id': 0, "attachment": attachment}
+    if message is not None:
+        post['message'] = message
+    try:
+        vk_session.method('messages.send', post)
+    except BaseException:
+        send_message(id, "Не удалось отправить документ")
+        return
 
-def send_photo(user_id, img_req, message = None):
+def send_photo(user_id, img_req, message=None):
     upload = vk_api.VkUpload(vk_session)
     photo = upload.photo_messages(img_req)[0]
     owner_id = photo['owner_id']
     photo_id = photo['id']
     attachment = f'photo{owner_id}_{photo_id}'
     post = {'user_id': user_id, 'random_id': 0, "attachment": attachment}
-    if message != None:
+    if message is not None:
         post['message'] = message
     try:
         vk_session.method('messages.send', post)
@@ -80,24 +82,35 @@ def send_photo(user_id, img_req, message = None):
         return
 
 
+def learn_spell(data):
+    words = set()
+    for name in data:
+        for question in data[name]['examples']:
+            question = clean_up(question)
+            for i in question.split():
+                words.add(i)
+    dictionary.word_frequency.load_words(words)
+    with open('dictionary.pickle', 'wb') as f:
+        pickle.dump(dictionary, f)
+    print("Словарь обучен")
+
+
 def make_neuronetwork():
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
-    X = []
+    x = []
     y = []
-
     for name in data:
         for question in data[name]['examples']:
-            X.append(question)
+            x.append(question)
             y.append(name)
         for phrase in data[name]['responses']:
-            X.append(phrase)
+            x.append(phrase)
             y.append(name)
 
     # векторизируем файлы и обучаем модель
-
     vectorizer = CountVectorizer()
-    X_vec = vectorizer.fit_transform(X)
+    X_vec = vectorizer.fit_transform(x)
     model_mlp = MLPClassifier(hidden_layer_sizes=322, activation='relu', solver='adam', learning_rate='adaptive',
                               max_iter=1500)
     model_mlp.fit(X_vec, y)
@@ -108,9 +121,7 @@ def make_neuronetwork():
         pickle.dump(model_mlp, f)
     with open('vector.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
-    neuro = []
-    neuro.append(model_mlp)
-    neuro.append(vectorizer)
+    neuro = [model_mlp, vectorizer]
     print("Обучено")
     return neuro
 
@@ -189,7 +200,7 @@ def create_keyboard(id, text, response="start"):
         elif response == "diving":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Дайвинг клуб', "https://vuc.mirea.ru/kluby/dayving/")
-        elif response == "metodichka":
+        elif response == "metodichka" or response == "maps":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Методичка первокурсника', "https://student.mirea.ru/help/file/metod_perv_2022.pdf")
         elif response == "double-diploma":
@@ -304,6 +315,22 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(inline=True)
             keyboard.add_button("Да", color=VkKeyboardColor.POSITIVE)
             keyboard.add_button("Нет", color=VkKeyboardColor.NEGATIVE)
+        elif response == "uch-otd" or response == "учебный-отдел-ит":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Учебный отдел", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/contacts/")
+        elif response == "профсоюз":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Профсоюз", "https://vk.com/rtuprofkom")
+        elif response == "center_culture":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Центр культуры", "https://student.mirea.ru/center_culture/creativity/")
+            keyboard.add_openlink_button("Группа в ВК ЦКТ", "https://vk.com/cktmirea")
+        elif response == "ври-лес" or response == "школа-леса":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("ВРИ Лес", "https://vk.com/vri_les")
+        elif response == "швизис":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("ШВИЗИС", "https://vk.com/shvizis")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -351,10 +378,7 @@ users = {}
 
 
 def get_intent(text, model_mlp, vectorizer):
-    # corrected_text = spell.candidates(text)
-    # corrected_text = TextBlob(text).correct()
-    text = spell_check(text)
-    print(text)
+    corrected_text = dictionary.correction(text)
     text_vec = vectorizer.transform([text])
     return model_mlp.predict(text_vec)[0]
 
@@ -366,11 +390,8 @@ def get_response(intent, data):
 def answering(text, model_mlp, data, vectorizer):
     intent = get_intent(text, model_mlp, vectorizer)
     answer = get_response(intent, data)
-    full_answer = []
-    full_answer.append(answer)
-    full_answer.append(intent)
+    full_answer = [answer, intent]
     return full_answer
-
 
 
 def add_answer(users):

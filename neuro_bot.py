@@ -4,12 +4,10 @@ import random
 import requests
 import urllib.request
 import vk_api
+import sys
 from neuro_defs import *
 from threading import Thread
-from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.longpoll import VkLongPoll, VkEventType
-from vk_api.utils import get_random_id
-from vk_api.bot_longpoll import VkBotEventType
 
 
 def is_intent(id, intent, data, is_new = False):
@@ -30,14 +28,13 @@ def is_canceled(id, msg):
 
 
 if __name__ == "__main__":
-    print(text_match("пуудж", "кудж"))
+    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+        data = json.load(f)
     if not os.path.isfile('model.pkl'):
         neuro = make_neuronetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
     else:
-        with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
-            data = json.load(f)
         with open('model.pkl', 'rb') as f:
             model_mlp = pickle.load(f)
         with open('vector.pkl', 'rb') as f:
@@ -46,6 +43,13 @@ if __name__ == "__main__":
     if os.path.isfile('mirea_users.pickle'):
         with open('mirea_users.pickle', 'rb') as f:
             users = pickle.load(f)
+    if os.path.isfile('dictionary.pickle'):
+        with open('dictionary.pickle', 'rb') as f:
+            dictionary = pickle.load(f)
+        print("Словарь загружен")
+    else:
+        print("Загрузка словаря...")
+        Thread(target=learn_spell, args=(data,)).start()
     Thread(target=add_answer, args=(users,)).start()
 
     longpoll = VkLongPoll(vk_session)
@@ -154,6 +158,7 @@ if __name__ == "__main__":
             elif "add_answer2" in users[id].state:
                 intent = users[id].state.split()[1]
                 answer = event.text
+                answer = answer.replace("&quot;", '"')
                 if answer == "0":
                     with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)
@@ -170,6 +175,7 @@ if __name__ == "__main__":
             elif "add_question2" in users[id].state:
                 intent = users[id].state.split()[1]
                 question = event.text
+                question = question.replace("&quot;", '"')
                 if question == "0":
                     with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)
@@ -218,7 +224,6 @@ if __name__ == "__main__":
                     users[id].state = "admin"
                     create_keyboard(id, "Выберите пункт меню", "admin")
 
-
             if users[id].state == "":
                 if message == "админпанель" or message == "админ панель":
                     if id == 286288768:
@@ -236,8 +241,8 @@ if __name__ == "__main__":
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, рассылка в основной "
                                      "версии ВИКА")
                 elif event.text == "Расписание пересдач":
-                    send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в "
-                                     "основной версии ВИКА")
+                    send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в"
+                                     " основной версии ВИКА")
                 elif text_match(message, "Что ты умеешь"):
                     send_message(id, "Напишите мне любой вопрос, связанный с нашим университетом, и я постараюсь найти "
                                      "ответ на него. Учтите, что я не живой "
@@ -275,25 +280,7 @@ if __name__ == "__main__":
                         with open('mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
-                    elif answer[1] == "maps":
-                        result = json.loads(requests.post(
-                            vk.docs.getMessagesUploadServer(type='doc', peer_id=id)[
-                                'upload_url'], files={'file': open('файлы/карты.pdf', 'rb')}).text)
-                        jsonAnswer = vk.docs.save(file=result['file'], title='title', tags=[])
-                        vk.messages.send(peer_id=id, message=answer[0], random_id=0,
-                                         attachment=f"doc{jsonAnswer['doc']['owner_id']}_{jsonAnswer['doc']['id']}")
-                        """upload = vk_api.VkUpload(vk_session)
-                        file = upload.document_message("файлы/карты.pdf")[0]
-                        owner_id = file['owner_id']
-                        doc_id = file['id']
-                        attachment = f'document{owner_id}_{doc_id}'
-                        post = {'user_id': id, 'random_id': 0, "attachment": attachment}
-                        post['message'] = answer[0]
-                        try:
-                            vk_session.method('messages.send', post)
-                        except BaseException as Ex:
-                            print(Ex)
-                            """
-                        # send_message(id, answer[0], None, file)
+                    elif answer[1] == "f-bot":
+                        send_photo(id, "файлы/f-bot.jpg", answer[0])
                     else:
                         create_keyboard(id, answer[0], answer[1])
