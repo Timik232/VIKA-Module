@@ -16,7 +16,7 @@ from sklearn.metrics import accuracy_score, f1_score
 from spellchecker import SpellChecker
 
 
-dictionary = SpellChecker(language='ru')
+dictionary = SpellChecker(language='ru', distance=1)
 
 
 vk_session = vk_api.VkApi(token=token_api)
@@ -46,8 +46,8 @@ def send_message(id, msg, stiker=None, attach=None):
             sticker_id=stiker,
             attachment=attach
         )
-    except BaseException:
-        print("ошибка, возможно человек добавил в чс")
+    except BaseException as ex:
+        print(ex)
         return
 
 def send_document(user_id, doc_req, message=None):
@@ -87,8 +87,8 @@ def learn_spell(data):
     for name in data:
         for question in data[name]['examples']:
             question = clean_up(question)
-            for i in question.split():
-                words.add(i)
+            for word in question.split():
+                words.add(word)
     dictionary.word_frequency.load_words(words)
     with open('dictionary.pickle', 'wb') as f:
         pickle.dump(dictionary, f)
@@ -162,7 +162,7 @@ def create_keyboard(id, text, response="start"):
         elif response == "website":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Сайт МИРЭА', "https://www.mirea.ru/")
-        elif response == "military":
+        elif response == "military" or response == "для-военкомата":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Памятка военнообязанному', "https://student.mirea.ru/help/section/conscript/")
         elif response == "rectorate":
@@ -331,6 +331,9 @@ def create_keyboard(id, text, response="start"):
         elif response == "швизис":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("ШВИЗИС", "https://vk.com/shvizis")
+        elif response == "заявление-в-студ":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Вступить в СтудСоюз", "https://sumirea.ru/connect/")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -377,9 +380,13 @@ def text_match(user_text, example):
 users = {}
 
 
-def get_intent(text, model_mlp, vectorizer):
-    corrected_text = dictionary.correction(text)
-    text_vec = vectorizer.transform([text])
+def get_intent(text, model_mlp, vectorizer,dictionary):
+    corrected_text = ""
+    for word in text.split():
+        word = dictionary.correction(word)
+        corrected_text += word + ' '
+    # corrected_text = dictionary.correction(text)
+    text_vec = vectorizer.transform([corrected_text])
     return model_mlp.predict(text_vec)[0]
 
 
@@ -387,8 +394,8 @@ def get_response(intent, data):
     return random.choice(data[intent]['responses'])
 
 
-def answering(text, model_mlp, data, vectorizer):
-    intent = get_intent(text, model_mlp, vectorizer)
+def answering(text, model_mlp, data, vectorizer, dictionary):
+    intent = get_intent(text, model_mlp, vectorizer, dictionary)
     answer = get_response(intent, data)
     full_answer = [answer, intent]
     return full_answer

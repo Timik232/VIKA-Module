@@ -85,10 +85,16 @@ if __name__ == "__main__":
                 elif text_match(message, "1.Вывести количество тем"):
                     send_message(id, "Количество тем: " + str(len(data)))
                     create_keyboard(id, "Выберите пункт меню", "admin")
-                elif text_match(message,"2.Вывести все темы"):
+                elif event.text == "2.Вывести все темы":
                     smg = ""
+                    count = 0
                     for i in data:
-                        smg += i + "\n"
+                        smg += i + ", "
+                        count += 1
+                        if count == 200:
+                            send_message(id, smg)
+                            smg = ""
+                            count = 0
                     send_message(id, smg)
                     create_keyboard(id, "Выберите пункт меню", "admin")
                 elif event.text == "3.Добавить тему":
@@ -116,7 +122,7 @@ if __name__ == "__main__":
                     send_message(id, "Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
                     create_keyboard(id, "Выберите пункт меню", "admin")
                 elif text_match(message, "Переобучить модель"):
-                    create_keyboard(id, "Вы уверены? Это может знаять значительное время (да/нет)", "yesno")
+                    create_keyboard(id, "Вы уверены? Это может занять значительное время (да/нет)", "yesno")
                     users[id].state = "retrain"
                 else:
                     send_message(id, "Неверный пункт меню")
@@ -139,7 +145,7 @@ if __name__ == "__main__":
                 if is_canceled(id, message):
                     create_keyboard(id, "Выберите пункт меню", "admin")
                 elif is_intent(id, event.text, data):
-                    send_message(id, data[event.text])
+                    send_message(id, str(data[event.text]))
                     create_keyboard(id, "Выберите пункт меню", "admin")
             elif "check_intent" in users[id].state:
                 if is_canceled(id, message):
@@ -215,6 +221,7 @@ if __name__ == "__main__":
                 if text_match(message, "да") or text_match(message, "yes"):
                     users[id].state = "admin"
                     create_keyboard(id, "Выберите пункт меню", "admin")
+                    Thread(target=learn_spell, args=(data,)).start()
                     neuro = make_neuronetwork()
                     model_mlp = neuro[0]
                     vectorizer = neuro[1]
@@ -257,7 +264,7 @@ if __name__ == "__main__":
                 elif text_match(message, "Оценить бота"):
                     create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
                 else:
-                    answer = answering(message, model_mlp, data, vectorizer)
+                    answer = answering(message, model_mlp, data, vectorizer, dictionary)
                     if answer[1] == "feedback":
                         send_message(id,
                                      "Введите в следующем сообщении свои пожелания по улучшению бота. Они будут "
