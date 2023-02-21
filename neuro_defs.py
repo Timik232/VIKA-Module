@@ -4,7 +4,9 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 import vk_api
 from private_api import token_api  # токен который не должен быть у всех, поэтому вынес в отдельный файл.
+from private_api import service_token
 import nltk
+import requests
 import re
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
@@ -13,8 +15,9 @@ import json
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics.pairwise import cosine_similarity
 from spellchecker import SpellChecker
-
+import tokenization
 
 dictionary = SpellChecker(language='ru', distance=1)
 
@@ -334,6 +337,9 @@ def create_keyboard(id, text, response="start"):
         elif response == "заявление-в-студ":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Вступить в СтудСоюз", "https://sumirea.ru/connect/")
+        elif response == "положение-элитной" or response == "отчисление-с-элитной":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Положение Элитной Подготовки", "https://www.mirea.ru/upload/iblock/555/scb628vl1c1v3ah22653z0grta7pz3fd/pr_1179_10_09_2020_Polozhenie-po-EP.pdf")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -355,6 +361,39 @@ def create_keyboard(id, text, response="start"):
     except BaseException as Exception:
         print(Exception)
         return
+
+
+
+
+def tokenize(text):
+    vocab_path = 'bert/vocab.txt'
+    tokenizer = tokenization.FullTokenizer(vocab_file=vocab_path, do_lower_case=True)
+    return tokenizer.tokenize(text)
+
+
+def tokenize_all(data):
+    x = []
+    y = []
+    for name in data:
+        for question in data[name]['examples']:
+            x.append(question)
+            y.append(name)
+    dict = {}
+    for i in range(len(x)):
+        dict[y[i]] = tokenize(x[i])
+    with open('test_model.json', 'w', encoding='UTF-8') as f:
+        json.dump(dict,f, ensure_ascii=False, indent=4)
+
+
+def find_closest(tok_dict, text):
+    x_items = []
+    y_items = []
+    for name in tok_dict:
+        for question in tok_dict[name]:
+            x_items.append(cosine_similarity(text,question))
+            y_items.append(name)
+    x_items, y_items = zip(*sorted(zip(x_items, y_items)))
+    return y_items[x_items.indexOf(x_items.max())]
 
 
 def clean_up(text):
@@ -380,10 +419,10 @@ def text_match(user_text, example):
 users = {}
 
 
-def get_intent(text, model_mlp, vectorizer,dictionary):
+def get_intent(text, model_mlp, vectorizer, dictionary):
     corrected_text = ""
     for word in text.split():
-        word = dictionary.correction(word)
+        word = str(dictionary.correction(word))
         corrected_text += word + ' '
     # corrected_text = dictionary.correction(text)
     text_vec = vectorizer.transform([corrected_text])
@@ -394,8 +433,9 @@ def get_response(intent, data):
     return random.choice(data[intent]['responses'])
 
 
-def answering(text, model_mlp, data, vectorizer, dictionary):
+def answering(text, model_mlp, data, vectorizer, dictionary, tok_dict):
     intent = get_intent(text, model_mlp, vectorizer, dictionary)
+    # intent = find_closest(tok_dict, text)
     answer = get_response(intent, data)
     full_answer = [answer, intent]
     return full_answer
@@ -503,3 +543,55 @@ def add_answer(users):
             make_neuronetwork()
         else:
             print("Неверный пункт меню")
+
+
+def parsing():
+    question = []
+    answer = []
+    dict = {}
+    offset = 0
+    all_posts = []
+    while offset < 1000:
+        vk_page = requests.get("https://api.vk.com/method/wall.get",
+                               params={
+                                   'access_token': service_token,
+                                   'v': 5.131,
+                                   'domain': 'ask_mirea',
+                                   'count': 100,
+                                   'offset': offset
+                               })
+        # vk_page = requests.get('https://vk.com/ask_mirea')
+        try:
+            page = vk_page.json()['response']['items']
+            all_posts.extend(page)
+        except BaseException as ex:
+            print(ex, vk_page)
+        offset += 100
+    for i in all_posts:
+        try:
+            msg = i['text']
+            if msg.find("Вопрос:") == -1 or msg.find('Ответ:') == -1:
+                continue
+            question.append(msg[msg.find("Вопрос:"):msg.find("Ответ:"):].strip())
+            answer.append(msg[msg.find("Ответ:"):].strip())
+        except BaseException as ex:
+            print(ex)
+            print(i['text'])
+    # print(question)
+    # print(answer)
+    for i in range(len(question)):
+        # print(question[i], answer[i])
+        question[i] = question[i].replace("Вопрос:", "", 1)
+        question[i] = clean_up(question[i].replace("Здравствуйте", "", 1).replace("спасибо","").replace("\n", " ").strip())
+        answer[i] = answer[i].replace("Ответ:", "", 1)
+        answer[i] = answer[i].replace("Здравствуйте!", "", 1).replace("Здравствуйте,", "", 1).replace("Здравствуйте.","",1).strip().capitalize()
+        tempq = [question[i]]
+        tempa = [answer[i]]
+        dict[f"topic{i}"] = {
+            "examples": tempq,
+            "responses": tempa
+        }
+    with open("second_dict.json", 'w', encoding='UTF-8') as f:
+        json.dump(dict,f, ensure_ascii=False, indent=4)
+    # print(dict)
+    print("json ready")

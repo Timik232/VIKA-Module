@@ -1,7 +1,6 @@
 import os
 import pickle
 import random
-import requests
 import urllib.request
 import vk_api
 import sys
@@ -27,7 +26,9 @@ def is_canceled(id, msg):
         return False
 
 
+
 if __name__ == "__main__":
+    # parsing()
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     if not os.path.isfile('model.pkl'):
@@ -40,6 +41,12 @@ if __name__ == "__main__":
         with open('vector.pkl', 'rb') as f:
             vectorizer = pickle.load(f)
         print("Обученная модель загружена")
+    if os.path.isfile('test_model.json'):
+        with open('test_model.json', 'r', encoding='UTF-8') as f:
+            tok_dict = json.load(f)
+    else:
+        tokenize_all(data)
+        print("Токенизировано")
     if os.path.isfile('mirea_users.pickle'):
         with open('mirea_users.pickle', 'rb') as f:
             users = pickle.load(f)
@@ -264,7 +271,7 @@ if __name__ == "__main__":
                 elif text_match(message, "Оценить бота"):
                     create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
                 else:
-                    answer = answering(message, model_mlp, data, vectorizer, dictionary)
+                    answer = answering(message, model_mlp, data, vectorizer, dictionary, tok_dict)
                     if answer[1] == "feedback":
                         send_message(id,
                                      "Введите в следующем сообщении свои пожелания по улучшению бота. Они будут "
