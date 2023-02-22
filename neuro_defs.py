@@ -18,6 +18,35 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics.pairwise import cosine_similarity
 from spellchecker import SpellChecker
 import tokenization
+from transformers import BertTokenizer, BertModel
+import torch
+from transformers import AutoModel
+
+
+def bert_tokenize(text, tokenizer, max_length):
+    # Токенизация текста
+    tokens = tokenizer.encode_plus(text, max_length=max_length,
+                                   truncation=True, padding='max_length',
+                                   return_tensors='pt')
+    return tokens['input_ids'], tokens['attention_mask']
+
+
+def bert_vectorize(text, model_name='bert-base-uncased', max_length=128):
+    # Загрузка предобученной модели и токенизатора
+    tokenizer = BertTokenizer.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
+
+    # Токенизация текста
+    input_ids, attention_mask = bert_tokenize(text, tokenizer, max_length)
+
+    # Получение вектора предложения
+    with torch.no_grad():
+        model_output = model(input_ids, attention_mask)
+        sentence_embedding = torch.mean(model_output.last_hidden_state, dim=1).squeeze()
+
+    return sentence_embedding.numpy()
+
+
 
 dictionary = SpellChecker(language='ru', distance=1)
 
@@ -380,7 +409,7 @@ def tokenize_all(data):
             y.append(name)
     dict = {}
     for i in range(len(x)):
-        dict[y[i]] = tokenize(x[i])
+        dict[y[i]] = bert_vectorize(x[i])
     with open('test_model.json', 'w', encoding='UTF-8') as f:
         json.dump(dict,f, ensure_ascii=False, indent=4)
 
@@ -388,6 +417,7 @@ def tokenize_all(data):
 def find_closest(tok_dict, text):
     x_items = []
     y_items = []
+    text = bert_vectorize(text)
     for name in tok_dict:
         for question in tok_dict[name]:
             x_items.append(cosine_similarity(text,question))

@@ -41,12 +41,13 @@ if __name__ == "__main__":
         with open('vector.pkl', 'rb') as f:
             vectorizer = pickle.load(f)
         print("Обученная модель загружена")
-    if os.path.isfile('test_model.json'):
+    """if os.path.isfile('test_model.json'):
         with open('test_model.json', 'r', encoding='UTF-8') as f:
             tok_dict = json.load(f)
     else:
         tokenize_all(data)
         print("Токенизировано")
+    """
     if os.path.isfile('mirea_users.pickle'):
         with open('mirea_users.pickle', 'rb') as f:
             users = pickle.load(f)
