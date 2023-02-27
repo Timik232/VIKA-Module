@@ -272,7 +272,7 @@ if __name__ == "__main__":
                 elif text_match(message, "Оценить бота"):
                     create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
                 else:
-                    answer = answering(message, model_mlp, data, vectorizer, dictionary, tok_dict)
+                    answer = answering(message, model_mlp, data, vectorizer, dictionary)
                     if answer[1] == "feedback":
                         send_message(id,
                                      "Введите в следующем сообщении свои пожелания по улучшению бота. Они будут "

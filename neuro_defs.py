@@ -18,9 +18,31 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics.pairwise import cosine_similarity
 from spellchecker import SpellChecker
 import tokenization
-from transformers import BertTokenizer, BertModel
 import torch
 from transformers import AutoModel
+from transformers import BertTokenizer, BertModel
+import torch
+
+tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
+model = BertModel.from_pretrained('bert-base-multilingual-cased', output_hidden_states=True)
+
+
+def get_topic_vectors(data):
+    topic_vectors = {}
+    for topic in data:
+        texts = data[topic]['examples']
+        vectors = []
+        for text in texts:
+            encoded = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt')
+            with torch.no_grad():
+                model_output = model(encoded['input_ids'], encoded['attention_mask'])
+                embeddings = model_output[2][-2]  # use second-to-last layer as embedding
+                mean_embedding = torch.mean(embeddings, dim=1)  # take mean of all tokens
+                vectors.append(mean_embedding)
+        topic_vectors[topic] = torch.mean(torch.cat(vectors), dim=0)
+    return topic_vectors
+
+
 
 
 def bert_tokenize(text, tokenizer, max_length):
@@ -47,9 +69,7 @@ def bert_vectorize(text, model_name='bert-base-uncased', max_length=128):
     return sentence_embedding.numpy()
 
 
-
 dictionary = SpellChecker(language='ru', distance=1)
-
 
 vk_session = vk_api.VkApi(token=token_api)
 vk = vk_session.get_api()
@@ -82,6 +102,7 @@ def send_message(id, msg, stiker=None, attach=None):
         print(ex)
         return
 
+
 def send_document(user_id, doc_req, message=None):
     upload = vk.VkUpload(vk_session)
     document = upload.document_message(doc_req)[0]
@@ -97,6 +118,7 @@ def send_document(user_id, doc_req, message=None):
     except BaseException:
         send_message(id, "Не удалось отправить документ")
         return
+
 
 def send_photo(user_id, img_req, message=None):
     upload = vk_api.VkUpload(vk_session)
@@ -234,13 +256,16 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button('Дайвинг клуб', "https://vuc.mirea.ru/kluby/dayving/")
         elif response == "metodichka" or response == "maps":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button('Методичка первокурсника', "https://student.mirea.ru/help/file/metod_perv_2022.pdf")
+            keyboard.add_openlink_button('Методичка первокурсника',
+                                         "https://student.mirea.ru/help/file/metod_perv_2022.pdf")
         elif response == "double-diploma":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Программа двойного диплома", "https://www.mirea.ru/international-activities/training-and-internships/")
+            keyboard.add_openlink_button("Программа двойного диплома",
+                                         "https://www.mirea.ru/international-activities/training-and-internships/")
         elif response == "car":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Подготовка водителей", "https://www.mirea.ru/about/the-structure-of-the-university/educational-scientific-structural-unit/driving-school-mstu-mirea/")
+            keyboard.add_openlink_button("Подготовка водителей",
+                                         "https://www.mirea.ru/about/the-structure-of-the-university/educational-scientific-structural-unit/driving-school-mstu-mirea/")
         elif response == "other-language":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Ссылка", "https://language.mirea.ru/")
@@ -349,7 +374,8 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_button("Нет", color=VkKeyboardColor.NEGATIVE)
         elif response == "uch-otd" or response == "учебный-отдел-ит":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Учебный отдел", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/contacts/")
+            keyboard.add_openlink_button("Учебный отдел",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/contacts/")
         elif response == "профсоюз":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Профсоюз", "https://vk.com/rtuprofkom")
@@ -368,7 +394,8 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button("Вступить в СтудСоюз", "https://sumirea.ru/connect/")
         elif response == "положение-элитной" or response == "отчисление-с-элитной":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Положение Элитной Подготовки", "https://www.mirea.ru/upload/iblock/555/scb628vl1c1v3ah22653z0grta7pz3fd/pr_1179_10_09_2020_Polozhenie-po-EP.pdf")
+            keyboard.add_openlink_button("Положение Элитной Подготовки",
+                                         "https://www.mirea.ru/upload/iblock/555/scb628vl1c1v3ah22653z0grta7pz3fd/pr_1179_10_09_2020_Polozhenie-po-EP.pdf")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -392,8 +419,6 @@ def create_keyboard(id, text, response="start"):
         return
 
 
-
-
 def tokenize(text):
     vocab_path = 'bert/vocab.txt'
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab_path, do_lower_case=True)
@@ -411,7 +436,7 @@ def tokenize_all(data):
     for i in range(len(x)):
         dict[y[i]] = bert_vectorize(x[i])
     with open('test_model.json', 'w', encoding='UTF-8') as f:
-        json.dump(dict,f, ensure_ascii=False, indent=4)
+        json.dump(dict, f, ensure_ascii=False, indent=4)
 
 
 def find_closest(tok_dict, text):
@@ -420,7 +445,7 @@ def find_closest(tok_dict, text):
     text = bert_vectorize(text)
     for name in tok_dict:
         for question in tok_dict[name]:
-            x_items.append(cosine_similarity(text,question))
+            x_items.append(cosine_similarity(text, question))
             y_items.append(name)
     x_items, y_items = zip(*sorted(zip(x_items, y_items)))
     return y_items[x_items.indexOf(x_items.max())]
@@ -463,7 +488,7 @@ def get_response(intent, data):
     return random.choice(data[intent]['responses'])
 
 
-def answering(text, model_mlp, data, vectorizer, dictionary, tok_dict):
+def answering(text, model_mlp, data, vectorizer, dictionary):
     intent = get_intent(text, model_mlp, vectorizer, dictionary)
     # intent = find_closest(tok_dict, text)
     answer = get_response(intent, data)
@@ -475,7 +500,8 @@ def add_answer(users):
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
-        print("Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n8.Вывести количество пользователей\n9.Вывести рейтинг\n10.Переобучить модель")
+        print(
+            "Выберите пункт меню:\n1.Вывести количество тем\n2.Вывести все темы\n3.Добавить тему\n4.Удалить тему\n5.Вывести всю информацию по теме\n6.Добавить ответ к теме\n7.Добавить вопрос к теме\n8.Вывести количество пользователей\n9.Вывести рейтинг\n10.Переобучить модель")
         choice = input()
         if choice == "1":
             print("Количество тем: " + str(len(data)))
@@ -612,9 +638,12 @@ def parsing():
     for i in range(len(question)):
         # print(question[i], answer[i])
         question[i] = question[i].replace("Вопрос:", "", 1)
-        question[i] = clean_up(question[i].replace("Здравствуйте", "", 1).replace("спасибо","").replace("\n", " ").strip())
+        question[i] = clean_up(
+            question[i].replace("Здравствуйте", "", 1).replace("спасибо", "").replace("\n", " ").strip())
         answer[i] = answer[i].replace("Ответ:", "", 1)
-        answer[i] = answer[i].replace("Здравствуйте!", "", 1).replace("Здравствуйте,", "", 1).replace("Здравствуйте.","",1).strip().capitalize()
+        answer[i] = answer[i].replace("Здравствуйте!", "", 1).replace("Здравствуйте,", "", 1).replace("Здравствуйте.",
+                                                                                                      "",
+                                                                                                      1).strip().capitalize()
         tempq = [question[i]]
         tempa = [answer[i]]
         dict[f"topic{i}"] = {
@@ -622,6 +651,6 @@ def parsing():
             "responses": tempa
         }
     with open("second_dict.json", 'w', encoding='UTF-8') as f:
-        json.dump(dict,f, ensure_ascii=False, indent=4)
+        json.dump(dict, f, ensure_ascii=False, indent=4)
     # print(dict)
     print("json ready")
