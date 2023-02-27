@@ -132,6 +132,9 @@ if __name__ == "__main__":
                 elif text_match(message, "Переобучить модель"):
                     create_keyboard(id, "Вы уверены? Это может занять значительное время (да/нет)", "yesno")
                     users[id].state = "retrain"
+                elif text_match(message,"тема по вопросу"):
+                    users[id].state = "get_topic"
+                    send_message(id, "Отправьте вопрос, по которому будет выдана тема")
                 else:
                     send_message(id, "Неверный пункт меню")
                     create_keyboard(id, "Выберите пункт меню", "admin")
@@ -208,7 +211,7 @@ if __name__ == "__main__":
                     users[id].state = "admin"
                     create_keyboard(id, "Выберите пункт меню", "admin")
                 else:
-                    intent = event.text
+                    intent = event.text.replace(" ", "-")
                     if is_intent(id, intent, data, True):
                         send_message(id, "Такая тема уже есть")
                         users[id].state = "admin"
@@ -238,6 +241,10 @@ if __name__ == "__main__":
                     send_message(id, "Отменено")
                     users[id].state = "admin"
                     create_keyboard(id, "Выберите пункт меню", "admin")
+            elif users[id].state == "get_topic":
+                send_message(id,get_intent(message,model_mlp, vectorizer,dictionary))
+                users[id].state = "admin"
+                create_keyboard(id, "Выберите пункт меню", "admin")
 
             if users[id].state == "":
                 if message == "админпанель" or message == "админ панель":

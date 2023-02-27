@@ -42,6 +42,23 @@ def get_topic_vectors(data):
         topic_vectors[topic] = torch.mean(torch.cat(vectors), dim=0)
     return topic_vectors
 
+from sklearn.metrics.pairwise import cosine_similarity
+
+def predict_topic(text, topic_vectors):
+    encoded = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt')
+    with torch.no_grad():
+        model_output = model(encoded['input_ids'], encoded['attention_mask'])
+        embeddings = model_output[2][-2]
+        mean_embedding = torch.mean(embeddings, dim=1)
+    similarities = {}
+    for topic, vector in topic_vectors.items():
+        similarity = cosine_similarity(mean_embedding.reshape(1, -1), vector.reshape(1, -1))[0][0]
+        similarities[topic] = similarity
+    return max(similarities, key=similarities.get)
+
+# question = "Какой лучший способ приготовления пиццы?"
+# predicted_topic = predict_topic(question)
+# print(predicted_topic)
 
 
 
@@ -392,6 +409,9 @@ def create_keyboard(id, text, response="start"):
         elif response == "заявление-в-студ":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Вступить в СтудСоюз", "https://sumirea.ru/connect/")
+        elif response == "программа-обмена":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Отд.Международного сотрудничества", "https://www.mirea.ru/about/the-structure-of-the-university/administrative-structural-unit/the-department-of-international-relations/the-department-of-international-cooperation/")
         elif response == "положение-элитной" or response == "отчисление-с-элитной":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Положение Элитной Подготовки",
