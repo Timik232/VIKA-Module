@@ -2,3 +2,4 @@
 private_api.py
 *.pyc
 __pycache__
+*.pyc
