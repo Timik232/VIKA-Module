@@ -1,3 +1,4 @@
+import os
 import pickle
 
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
@@ -22,9 +23,24 @@ import torch
 from transformers import AutoModel
 from transformers import BertTokenizer, BertModel
 import torch
+from transformers import logging
+import tensorflow as tf
+logging.set_verbosity_error()
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
 model = BertModel.from_pretrained('bert-base-multilingual-cased', output_hidden_states=True)
+
+# print(model.encode("Кудж"))
+print(tokenizer.encode("кудж"))
+
+# first = tokenizer.encode("Кудж")
+# second = tokenizer.encode("Куджа")
+# third = tokenizer.encode("Куртка")
+# print(cosine_similarity(first,second), cosine_similarity(first, third))
+
+def tok():
+    inp_anc = tf.keras.Input(shape=(1,), dtype=tf.string)
+
 
 
 def get_topic_vectors(data):
@@ -40,7 +56,10 @@ def get_topic_vectors(data):
                 mean_embedding = torch.mean(embeddings, dim=1)  # take mean of all tokens
                 vectors.append(mean_embedding)
         topic_vectors[topic] = torch.mean(torch.cat(vectors), dim=0)
-    return topic_vectors
+    with open('topic_vector.pkl', 'wb') as f:
+        pickle.dump(topic_vectors, f)
+
+
 
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -218,6 +237,7 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Устав', "https://www.mirea.ru/upload/medialibrary/d0e/Ustav-Novyy.pdf")
             keyboard.add_openlink_button('Правила внутреннего распорядка', "https://www.mirea.ru/docs/125641/")
+            keyboard.add_line()
             keyboard.add_openlink_button('Этический кодекс',
                                          "https://student.mirea.ru/regulatory_documents/file/3f9468db49ffd14fe96c0d28d8c056bf.pdf")
         elif response == "museums":
@@ -409,6 +429,39 @@ def create_keyboard(id, text, response="start"):
         elif response == "заявление-в-студ":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Вступить в СтудСоюз", "https://sumirea.ru/connect/")
+        elif response == "отдел-по-работе-общежитие":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Работа с общежитиями", "https://student.mirea.ru/about/section1/")
+        elif response == "справочник":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Справочник", "https://tel.mirea.ru/")
+        elif response == "кафедра-общей-информатики":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institut-iskusstvennogo-intellekta/the-structure-of-the-institute/chair-of-general-informatics/")
+        elif response == "вт" or response == "платонова":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ВК", "https://vk.com/kvt_mirea")
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-computer-engineering/")
+        elif response == "мосит" or response == "головин":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ВК", "https://vk.com/mireamosit")
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-mathematical-provision-and-standardization-of-information-technology/")
+        elif response == "иппо" or response == "болбаков":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ВК", "https://vk.com/ippo_it")
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-instrumental-and-applied-software/")
+        elif response == "ппи" or response == "ппи-зав":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ВК", "https://vk.com/ppi_it")
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-practical-and-applied-computer-science/")
+        elif response == "кафедра-пм" or response == "дзержинский":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ВК", "https://vk.com/kafprimat")
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-applied-mathematics/")
+        elif response == "кис" or response == "адрианова":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Группа ВК", "https://vk.com/kis_it_mirea")
+            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-corporate-information-systems/")
         elif response == "программа-обмена":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Отд.Международного сотрудничества", "https://www.mirea.ru/about/the-structure-of-the-university/administrative-structural-unit/the-department-of-international-relations/the-department-of-international-cooperation/")
