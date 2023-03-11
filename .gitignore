@@ -3,3 +3,4 @@ private_api.py
 *.pyc
 __pycache__
 .idea
+mirea_users.pickle

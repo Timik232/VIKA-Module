@@ -26,13 +26,13 @@ def is_canceled(id, msg):
         return False
 
 
-
 if __name__ == "__main__":
     # parsing()
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     if not os.path.isfile('model.pkl'):
-        neuro = make_neuronetwork()
+        # neuro = make_neuronetwork()
+        neuro = make_bertnetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
     else:
@@ -94,13 +94,10 @@ if __name__ == "__main__":
             elif users[id].state == "waiting":
                 users[id].state = ""
             elif users[id].state == "admin":
-                if text_match(message, "выход") or text_match(message, "10.Выход"):
+                if text_match(message, "выход") or text_match(message, ".Выход"):
                     users[id].state = "waiting"
                     create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
-                elif text_match(message, "1.Вывести количество тем"):
-                    send_message(id, "Количество тем: " + str(len(data)))
-                    create_keyboard(id, "Выберите пункт меню", "admin")
-                elif event.text == "2.Вывести все темы":
+                elif event.text == "1.Вывести все темы":
                     smg = ""
                     count = 0
                     for i in data:
@@ -112,36 +109,30 @@ if __name__ == "__main__":
                             count = 0
                     send_message(id, smg)
                     create_keyboard(id, "Выберите пункт меню", "admin")
-                elif event.text == "3.Добавить тему":
+                elif event.text == "2.Добавить тему":
                     send_message(id, "Введите название темы")
                     users[id].state = "add_intent"
-                elif text_match(message, "4.Удалить тему"):
+                elif event.text == "3.Удалить тему":
                     send_message(id, "Введите название темы")
                     users[id].state = "delete"
-                elif event.text == "5.Вывести всю информацию по теме":
+                elif event.text == "4.Вывести всю информацию по теме":
                     send_message(id,"Введите название темы")
                     users[id].state = "info"
-                elif event.text == "6.Добавить ответ к теме":
+                elif event.text == "5.Добавить ответ к теме":
                     send_message(id, "Введите название темы")
                     users[id].state = "check_intent add_answer"
-                elif event.text ==  "7.Добавить вопрос к теме":
+                elif event.text == "6.Добавить вопрос к теме":
                     send_message(id, "Введите название темы")
                     users[id].state = "check_intent add_question"
-                elif text_match(message, "8.Вывести количество пользователей"):
-                    send_message(id, "Количество пользователей бота: " + str(len(users)))
-                    create_keyboard(id, "Выберите пункт меню", "admin")
-                elif text_match(message, "9.Вывести рейтинг бота"):
-                    rate = 0
-                    for i in users:
-                        rate += users[i].like
-                    send_message(id, "Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
-                    create_keyboard(id, "Выберите пункт меню", "admin")
+                elif event.text == "7.Найти тему по вопросу" or text_match(message,"тема по вопросу"):
+                    users[id].state = "get_topic"
+                    send_message(id, "Отправьте вопрос, по которому будет выдана тема")
+                elif event.text == "8.Статистика и рейтинг":
+                    users[id].state = "statistic"
+                    create_keyboard(id, "Выберите пункт меню", "statistic")
                 elif text_match(message, "Переобучить модель"):
                     create_keyboard(id, "Вы уверены? Это может занять значительное время (да/нет)", "yesno")
                     users[id].state = "retrain"
-                elif text_match(message,"тема по вопросу"):
-                    users[id].state = "get_topic"
-                    send_message(id, "Отправьте вопрос, по которому будет выдана тема")
                 else:
                     send_message(id, "Неверный пункт меню")
                     create_keyboard(id, "Выберите пункт меню", "admin")
@@ -240,7 +231,8 @@ if __name__ == "__main__":
                     users[id].state = "admin"
                     create_keyboard(id, "Выберите пункт меню", "admin")
                     Thread(target=learn_spell, args=(data,)).start()
-                    neuro = make_neuronetwork()
+                    # neuro = make_neuronetwork()
+                    neuro = make_bertnetwork()
                     model_mlp = neuro[0]
                     vectorizer = neuro[1]
                     send_message(id, "Нейросеть переобучена")
@@ -252,6 +244,36 @@ if __name__ == "__main__":
                 send_message(id,get_intent(message,model_mlp, vectorizer,dictionary))
                 users[id].state = "admin"
                 create_keyboard(id, "Выберите пункт меню", "admin")
+            elif users[id].state == "statistic":
+                if event.text == "1.Вывести количество тем":
+                    send_message(id, "Количество тем: " + str(len(data)))
+                    create_keyboard(id, "Выберите пункт меню", "statistic")
+                elif event.text == "2.Рейтинг бота":
+                    rate = 0
+                    for i in users:
+                        rate += users[i].like
+                    send_message(id, "Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
+                    create_keyboard(id, "Выберите пункт меню", "statistic")
+                elif event.text == "3.Количество вопросов":
+                    count = 0
+                    for i in data.keys():
+                        for j in data[i]["examples"]:
+                            count += 1
+                    count -= 300  # вычитаем вопросы приветствия/прощания и т.п.
+                    send_message(id, "Количество вопросов, внесённых в бота: " + str(count))
+                    create_keyboard(id, "Выберите пункт меню", "statistic")
+                elif event.text == "4.Вывести количество пользователей":
+                    send_message(id, "Количество пользователей бота: " + str(len(users)))
+                    create_keyboard(id, "Выберите пункт меню", "statistic")
+                elif text_match(message, "5.Вернуться"):
+                    users[id].state = "admin"
+                    create_keyboard(id, "Выберите пункт меню", "admin")
+                elif text_match(message, "выход"):
+                    users[id].state = "waiting"
+                    create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
+                else:
+                    send_message(id, "Неверный пункт меню")
+                    create_keyboard(id, "Выберите пункт меню", "statistic")
 
             if users[id].state == "":
                 if message == "админпанель" or message == "админ панель":

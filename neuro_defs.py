@@ -1,6 +1,7 @@
 import os
 import pickle
 
+from sentence_transformers import SentenceTransformer
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 import vk_api
@@ -27,82 +28,6 @@ from transformers import logging
 import tensorflow as tf
 logging.set_verbosity_error()
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
-model = BertModel.from_pretrained('bert-base-multilingual-cased', output_hidden_states=True)
-
-# print(model.encode("Кудж"))
-print(tokenizer.encode("кудж"))
-
-# first = tokenizer.encode("Кудж")
-# second = tokenizer.encode("Куджа")
-# third = tokenizer.encode("Куртка")
-# print(cosine_similarity(first,second), cosine_similarity(first, third))
-
-def tok():
-    inp_anc = tf.keras.Input(shape=(1,), dtype=tf.string)
-
-
-
-def get_topic_vectors(data):
-    topic_vectors = {}
-    for topic in data:
-        texts = data[topic]['examples']
-        vectors = []
-        for text in texts:
-            encoded = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt')
-            with torch.no_grad():
-                model_output = model(encoded['input_ids'], encoded['attention_mask'])
-                embeddings = model_output[2][-2]  # use second-to-last layer as embedding
-                mean_embedding = torch.mean(embeddings, dim=1)  # take mean of all tokens
-                vectors.append(mean_embedding)
-        topic_vectors[topic] = torch.mean(torch.cat(vectors), dim=0)
-    with open('topic_vector.pkl', 'wb') as f:
-        pickle.dump(topic_vectors, f)
-
-
-
-from sklearn.metrics.pairwise import cosine_similarity
-
-def predict_topic(text, topic_vectors):
-    encoded = tokenizer.encode_plus(text, add_special_tokens=True, return_tensors='pt')
-    with torch.no_grad():
-        model_output = model(encoded['input_ids'], encoded['attention_mask'])
-        embeddings = model_output[2][-2]
-        mean_embedding = torch.mean(embeddings, dim=1)
-    similarities = {}
-    for topic, vector in topic_vectors.items():
-        similarity = cosine_similarity(mean_embedding.reshape(1, -1), vector.reshape(1, -1))[0][0]
-        similarities[topic] = similarity
-    return max(similarities, key=similarities.get)
-
-# question = "Какой лучший способ приготовления пиццы?"
-# predicted_topic = predict_topic(question)
-# print(predicted_topic)
-
-
-
-def bert_tokenize(text, tokenizer, max_length):
-    # Токенизация текста
-    tokens = tokenizer.encode_plus(text, max_length=max_length,
-                                   truncation=True, padding='max_length',
-                                   return_tensors='pt')
-    return tokens['input_ids'], tokens['attention_mask']
-
-
-def bert_vectorize(text, model_name='bert-base-uncased', max_length=128):
-    # Загрузка предобученной модели и токенизатора
-    tokenizer = BertTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
-
-    # Токенизация текста
-    input_ids, attention_mask = bert_tokenize(text, tokenizer, max_length)
-
-    # Получение вектора предложения
-    with torch.no_grad():
-        model_output = model(input_ids, attention_mask)
-        sentence_embedding = torch.mean(model_output.last_hidden_state, dim=1).squeeze()
-
-    return sentence_embedding.numpy()
 
 
 dictionary = SpellChecker(language='ru', distance=1)
@@ -185,6 +110,39 @@ def learn_spell(data):
     print("Словарь обучен")
 
 
+def make_bertnetwork():
+    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+        data = json.load(f)
+    x = []
+    y = []
+    for name in data:
+        for question in data[name]['examples']:
+            x.append(question)
+            y.append(name)
+        for phrase in data[name]['responses']:
+            x.append(phrase)
+            y.append(name)
+
+    device = torch.device("cuda")
+    vectorizer = SentenceTransformer('Labse')
+    vectorizer.to(device)
+    x_vec = vectorizer.encode(x)
+    model_mlp = MLPClassifier(hidden_layer_sizes=322, activation='relu', solver='adam', learning_rate='adaptive',
+                              max_iter=1500)
+    model_mlp.fit(x_vec, y)
+    y_pred = model_mlp.predict(x_vec)
+    print("точность " + str(accuracy_score(y, y_pred)))
+    print("f1 " + str(f1_score(y, y_pred, average='macro')))
+    with open('model.pkl', 'wb') as f:
+        pickle.dump(model_mlp, f)
+    with open('vector.pkl', 'wb') as f:
+        pickle.dump(vectorizer, f)
+    neuro = [model_mlp, vectorizer]
+    print("Обучено")
+    return neuro
+
+
+
 def make_neuronetwork():
     with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
@@ -220,7 +178,7 @@ def make_neuronetwork():
 def create_keyboard(id, text, response="start"):
     try:
         keyboard = VkKeyboard(one_time=True)
-        if response == "not_that" or response == "help_me" or response == "callhuman" or response == "flood":
+        if response == "not_that" or response == "help_me" or response == "rss" or response == "callhuman" or response == "flood":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Ссылка на ВК', "https://vk.com/bramind002")
         elif response == "grifon":
@@ -230,7 +188,7 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Психологическая служба',
                                          "https://student.mirea.ru/psychological_service/staff/")
-        elif response == "map":
+        elif response == "map" or response == "location":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button('Навигатор', "https://ischemes.ru/group/rtu-mirea/vern78")
         elif response == "rules":
@@ -386,25 +344,36 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button("Радиорубка и Радиолаб", "https://vk.com/rtu.radio")
         elif response == "admin":
             keyboard = VkKeyboard(one_time=True)
+            # keyboard.add_button("1.Вывести количество тем", color=VkKeyboardColor.PRIMARY)
+            # keyboard.add_line()
+            keyboard.add_button("1.Вывести все темы", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("2.Добавить тему", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("3.Удалить тему", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("4.Вывести всю информацию по теме", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("5.Добавить ответ к теме", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("6.Добавить вопрос к теме", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("7.Найти тему по вопросу", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("8.Статистика и рейтинг", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("9.Выход", color=VkKeyboardColor.NEGATIVE)
+        elif response == "statistic":
+            keyboard = VkKeyboard(one_time=True)
             keyboard.add_button("1.Вывести количество тем", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button("2.Вывести все темы", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button("2.Рейтинг бота", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button("3.Добавить тему", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button("3.Количество вопросов", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button("4.Удалить тему", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button("4.Вывести количество пользователей", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button("5.Вывести всю информацию по теме", color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button("6.Добавить ответ к теме", color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button("7.Добавить вопрос к теме", color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button("8.Вывести количество пользователей", color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button("9.Вывести рейтинг", color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button("10.Выход", color=VkKeyboardColor.NEGATIVE)
+            keyboard.add_button("5.Вернуться", color=VkKeyboardColor.NEGATIVE)
         elif response == "yesno":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_button("Да", color=VkKeyboardColor.POSITIVE)
@@ -469,6 +438,9 @@ def create_keyboard(id, text, response="start"):
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Положение Элитной Подготовки",
                                          "https://www.mirea.ru/upload/iblock/555/scb628vl1c1v3ah22653z0grta7pz3fd/pr_1179_10_09_2020_Polozhenie-po-EP.pdf")
+        elif response == "стипендия-по-приоритетным-направлениям":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Перечень", "https://base.garant.ru/70842752/#block_3")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -496,32 +468,6 @@ def tokenize(text):
     vocab_path = 'bert/vocab.txt'
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab_path, do_lower_case=True)
     return tokenizer.tokenize(text)
-
-
-def tokenize_all(data):
-    x = []
-    y = []
-    for name in data:
-        for question in data[name]['examples']:
-            x.append(question)
-            y.append(name)
-    dict = {}
-    for i in range(len(x)):
-        dict[y[i]] = bert_vectorize(x[i])
-    with open('test_model.json', 'w', encoding='UTF-8') as f:
-        json.dump(dict, f, ensure_ascii=False, indent=4)
-
-
-def find_closest(tok_dict, text):
-    x_items = []
-    y_items = []
-    text = bert_vectorize(text)
-    for name in tok_dict:
-        for question in tok_dict[name]:
-            x_items.append(cosine_similarity(text, question))
-            y_items.append(name)
-    x_items, y_items = zip(*sorted(zip(x_items, y_items)))
-    return y_items[x_items.indexOf(x_items.max())]
 
 
 def clean_up(text):
@@ -557,13 +503,23 @@ def get_intent(text, model_mlp, vectorizer, dictionary):
     return model_mlp.predict(text_vec)[0]
 
 
+def get_intent_bert(text, model_mlp, vectorizer, dictionary):
+    corrected_text = ""
+    for word in text.split():
+        word = str(dictionary.correction(word))
+        corrected_text += word + ' '
+    # corrected_text = dictionary.correction(text)
+    text_vec = vectorizer.encode([corrected_text])
+    return model_mlp.predict(text_vec)[0]
+
+
 def get_response(intent, data):
     return random.choice(data[intent]['responses'])
 
 
 def answering(text, model_mlp, data, vectorizer, dictionary):
-    intent = get_intent(text, model_mlp, vectorizer, dictionary)
-    # intent = find_closest(tok_dict, text)
+    # intent = get_intent(text, model_mlp, vectorizer, dictionary)
+    intent = get_intent_bert(text, model_mlp, vectorizer, dictionary)
     answer = get_response(intent, data)
     full_answer = [answer, intent]
     return full_answer
