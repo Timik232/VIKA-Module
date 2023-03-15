@@ -28,19 +28,22 @@ def is_canceled(id, msg):
 
 if __name__ == "__main__":
     # parsing()
-    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+    if not os.path.exists(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle'):
+        os.mkdir(f"{os.path.dirname(os.getcwd())}\\VIKA_pickle")
+    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
-    if not os.path.isfile('model.pkl'):
+    if not os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl'):
         # neuro = make_neuronetwork()
         neuro = make_bertnetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
     else:
-        with open('model.pkl', 'rb') as f:
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'rb') as f:
             model_mlp = pickle.load(f)
-        with open('vector.pkl', 'rb') as f:
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'rb') as f:
             vectorizer = pickle.load(f)
         print("Обученная модель загружена")
+
 
     # if os.path.isfile('mirea_users.pickle'):
     #     with open('mirea_users.pickle', 'rb') as f:
@@ -55,11 +58,12 @@ if __name__ == "__main__":
     # print(predicted_topic)
 
 
-    if os.path.isfile('mirea_users.pickle'):
-        with open('mirea_users.pickle', 'rb') as f:
+    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle'):
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'rb') as f:
             users = pickle.load(f)
-    if os.path.isfile('dictionary.pickle'):
-        with open('dictionary.pickle', 'rb') as f:
+            print("Пользователи загружены")
+    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle'):
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle', 'rb') as f:
             dictionary = pickle.load(f)
         print("Словарь загружен")
     else:
@@ -75,7 +79,7 @@ if __name__ == "__main__":
             id = event.user_id
             if not (id in users):  # если нет в базе данных
                 users[id] = UserInfo()
-                with open('mirea_users.pickle', 'wb') as f:
+                with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                     pickle.dump(users, f)
             message = clean_up(event.text)  # очищенный текст
             if users[id].state == "Пожелания":
@@ -143,7 +147,7 @@ if __name__ == "__main__":
                     create_keyboard(id, "Выберите пункт меню", "admin")
                 elif is_intent(id, event.text, data):
                     del data[event.text]
-                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)
                     send_message(id, "Тема была удалена")
                     create_keyboard(id, "Выберите пункт меню", "admin")
@@ -175,7 +179,7 @@ if __name__ == "__main__":
                 answer = event.text
                 answer = answer.replace("&quot;", '"')
                 if answer == "0":
-                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)
                     send_message(id, "Ответ был записан в файл.")
                     if len(users[id].state.split()) == 2:
@@ -192,7 +196,7 @@ if __name__ == "__main__":
                 question = event.text
                 question = question.replace("&quot;", '"')
                 if question == "0":
-                    with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                    with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)
                     send_message(id, "Вопросы были записаны в файл.")
                     if len(users[id].state.split()) == 2:
@@ -282,7 +286,7 @@ if __name__ == "__main__":
                         users[id].state = "admin"
                         create_keyboard(id, "Выберите пункт меню", "admin")
                     else:
-                        send_message(id, "У вас нет доступа к администраторскому режиму")
+                        send_message(id, "You are not supposed to be here")
                 elif text_match(message, "расписание"):
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание в основной "
                                      "версии ВИКА")
@@ -318,17 +322,17 @@ if __name__ == "__main__":
                         send_photo(id, "файлы/panda.jpg", answer[0])
                     elif answer[1] == "like":
                         users[id].like = 1
-                        with open('mirea_users.pickle', 'wb') as f:
+                        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
                     elif answer[1] == "dislike":
                         users[id].like = -1
-                        with open('mirea_users.pickle', 'wb') as f:
+                        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
                     elif answer[1] == "none":
                         users[id].like = 0
-                        with open('mirea_users.pickle', 'wb') as f:
+                        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
                     elif answer[1] == "f-bot":

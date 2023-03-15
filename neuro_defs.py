@@ -2,6 +2,7 @@ import os
 import pickle
 
 from sentence_transformers import SentenceTransformer
+from torch.utils.data import DataLoader
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from vk_api.utils import get_random_id
 import vk_api
@@ -21,14 +22,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 from spellchecker import SpellChecker
 import tokenization
 import torch
-from transformers import AutoModel
+from transformers import AutoModel, AutoTokenizer
 from transformers import BertTokenizer, BertModel
 import torch
 from transformers import logging
 import tensorflow as tf
+
 logging.set_verbosity_error()
-
-
 
 dictionary = SpellChecker(language='ru', distance=1)
 
@@ -105,13 +105,46 @@ def learn_spell(data):
             for word in question.split():
                 words.add(word)
     dictionary.word_frequency.load_words(words)
-    with open('dictionary.pickle', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle', 'wb') as f:
         pickle.dump(dictionary, f)
     print("Словарь обучен")
 
 
+# def fine_tuning():
+#     model_name = 'sentence-transformers/LaBSE'
+#     tokenizer = AutoTokenizer.from_pretrained(model_name)
+#     model = AutoModel.from_pretrained(model_name)
+#
+#     # Получаем словарь из токенайзера
+#     vocab = tokenizer.get_vocab()
+#
+#     # Добавляем новое слово
+#     new_word = 'вуц'
+#     vocab[new_word] = len(vocab)
+#     from transformers import AutoTokenizer, AutoModel
+#     import torch
+#     from torch.utils.data import TensorDataset, DataLoader
+#     from sentence_transformers import SentenceTransformer, InputExample
+#     # Дообучаем модель на примерах
+#     sentences = ['это предложение с новым словом вуц', 'это другое предложение без новых слов']
+#     examples = [InputExample(texts=[s], label=0) for s in sentences]
+#
+#     train_data = DataLoader(TensorDataset(torch.arange(len(examples))), batch_size=2)
+#     model.train()
+#     for epoch in range(3):
+#         for batch in train_data:
+#             model.zero_grad()
+#             batch = tuple(t.to('cuda') for t in batch)
+#             inputs = tokenizer([examples[i].texts[0] for i in batch], padding=True, truncation=True, return_tensors='pt')
+#             inputs = {k: v.to('cuda') for k, v in inputs.items()}
+#             outputs = model(**inputs)[1]
+#             loss = torch.mean(outputs[:, 0])
+#             loss.backward()
+#             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+
 def make_bertnetwork():
-    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     x = []
     y = []
@@ -124,7 +157,7 @@ def make_bertnetwork():
             y.append(name)
 
     device = torch.device("cuda")
-    vectorizer = SentenceTransformer('Labse')
+    vectorizer = SentenceTransformer('distiluse-base-multilingual-cased')
     vectorizer.to(device)
     x_vec = vectorizer.encode(x)
     model_mlp = MLPClassifier(hidden_layer_sizes=322, activation='relu', solver='adam', learning_rate='adaptive',
@@ -133,18 +166,17 @@ def make_bertnetwork():
     y_pred = model_mlp.predict(x_vec)
     print("точность " + str(accuracy_score(y, y_pred)))
     print("f1 " + str(f1_score(y, y_pred, average='macro')))
-    with open('model.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'wb') as f:
         pickle.dump(model_mlp, f)
-    with open('vector.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
     neuro = [model_mlp, vectorizer]
     print("Обучено")
     return neuro
 
 
-
 def make_neuronetwork():
-    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     x = []
     y = []
@@ -165,9 +197,9 @@ def make_neuronetwork():
     y_pred = model_mlp.predict(X_vec)
     print("точность " + str(accuracy_score(y, y_pred)))
     print("f1 " + str(f1_score(y, y_pred, average='macro')))
-    with open('model.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'wb') as f:
         pickle.dump(model_mlp, f)
-    with open('vector.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
     neuro = [model_mlp, vectorizer]
     print("Обучено")
@@ -267,6 +299,9 @@ def create_keyboard(id, text, response="start"):
         elif response == "business" or response == "softskill":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Ссылка на группу", "https://vk.com/ntv.mirea")
+        elif response == "забыл-вещи":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Бюро находок", "https://vk.com/public79544978")
         elif response == "science":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Научные сообщества", "https://student.mirea.ru/student_scientific_society/")
@@ -406,34 +441,42 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_openlink_button("Справочник", "https://tel.mirea.ru/")
         elif response == "кафедра-общей-информатики":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institut-iskusstvennogo-intellekta/the-structure-of-the-institute/chair-of-general-informatics/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institut-iskusstvennogo-intellekta/the-structure-of-the-institute/chair-of-general-informatics/")
         elif response == "вт" or response == "платонова":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Группа ВК", "https://vk.com/kvt_mirea")
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-computer-engineering/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-computer-engineering/")
         elif response == "мосит" or response == "головин":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Группа ВК", "https://vk.com/mireamosit")
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-mathematical-provision-and-standardization-of-information-technology/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-mathematical-provision-and-standardization-of-information-technology/")
         elif response == "иппо" or response == "болбаков":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Группа ВК", "https://vk.com/ippo_it")
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-instrumental-and-applied-software/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/department-of-instrumental-and-applied-software/")
         elif response == "ппи" or response == "ппи-зав":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Группа ВК", "https://vk.com/ppi_it")
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-practical-and-applied-computer-science/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-practical-and-applied-computer-science/")
         elif response == "кафедра-пм" or response == "дзержинский":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Группа ВК", "https://vk.com/kafprimat")
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-applied-mathematics/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-applied-mathematics/")
         elif response == "кис" or response == "адрианова":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Группа ВК", "https://vk.com/kis_it_mirea")
-            keyboard.add_openlink_button("Подробнее", "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-corporate-information-systems/")
+            keyboard.add_openlink_button("Подробнее",
+                                         "https://www.mirea.ru/education/the-institutes-and-faculties/institute-of-information-technology/the-structure-of-the-institute/the-department-of-corporate-information-systems/")
         elif response == "программа-обмена":
             keyboard = VkKeyboard(inline=True)
-            keyboard.add_openlink_button("Отд.Международного сотрудничества", "https://www.mirea.ru/about/the-structure-of-the-university/administrative-structural-unit/the-department-of-international-relations/the-department-of-international-cooperation/")
+            keyboard.add_openlink_button("Отд.Международного сотрудничества",
+                                         "https://www.mirea.ru/about/the-structure-of-the-university/administrative-structural-unit/the-department-of-international-relations/the-department-of-international-cooperation/")
         elif response == "положение-элитной" or response == "отчисление-с-элитной":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Положение Элитной Подготовки",
@@ -510,6 +553,10 @@ def get_intent_bert(text, model_mlp, vectorizer, dictionary):
         corrected_text += word + ' '
     # corrected_text = dictionary.correction(text)
     text_vec = vectorizer.encode([corrected_text])
+    import pandas as pd
+    proba = model_mlp.predict_proba(text_vec)[0]
+    print(max(proba))
+    # print(pd.DataFrame(columns=model_mlp.classes_, data=proba), sep="\n")
     return model_mlp.predict(text_vec)[0]
 
 
@@ -526,7 +573,7 @@ def answering(text, model_mlp, data, vectorizer, dictionary):
 
 
 def add_answer(users):
-    with open('intents_dataset.json', 'r', encoding='UTF-8') as f:
+    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
         print(
@@ -561,7 +608,7 @@ def add_answer(users):
                     if answer == "0":
                         break
                     data[intent]['responses'].append(answer)
-                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
                 end = input()
@@ -597,7 +644,7 @@ def add_answer(users):
                     if answer == "0":
                         break
                     data[intent]['responses'].append(answer)
-                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Ответ был записан в файл.")
             else:
@@ -612,7 +659,7 @@ def add_answer(users):
                     if question == "0":
                         break
                     data[intent]['examples'].append(question)
-                with open('intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Вопросы были записаны в файл.")
             else:
@@ -671,8 +718,8 @@ def parsing():
             question[i].replace("Здравствуйте", "", 1).replace("спасибо", "").replace("\n", " ").strip())
         answer[i] = answer[i].replace("Ответ:", "", 1)
         answer[i] = answer[i].replace("Здравствуйте!", "", 1).replace("Здравствуйте,", "", 1).replace("Здравствуйте.",
-                                                                                                      "",
-                                                                                                      1).strip().capitalize()
+                                                                                                      "", 1).strip()
+
         tempq = [question[i]]
         tempa = [answer[i]]
         dict[f"topic{i}"] = {
