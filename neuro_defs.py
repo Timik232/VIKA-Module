@@ -1,6 +1,5 @@
 import os
 import pickle
-
 from sentence_transformers import SentenceTransformer
 from torch.utils.data import DataLoader
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
@@ -11,22 +10,31 @@ from private_api import service_token
 import nltk
 import requests
 import re
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.neural_network import MLPClassifier
 import random
 import json
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.metrics.pairwise import cosine_similarity
 from spellchecker import SpellChecker
 import tokenization
-import torch
 from transformers import AutoModel, AutoTokenizer
 from transformers import BertTokenizer, BertModel
 import torch
 from transformers import logging
 import tensorflow as tf
+from sklearn.metrics.pairwise import cosine_similarity
+from transformers import DataCollatorWithPadding
+import numpy as np
+import evaluate
+from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+from transformers import pipeline
+from huggingface_hub import notebook_login
+from sentence_transformers import losses
+from torch.utils.data import DataLoader
+from sentence_transformers import InputExample
+from datasets import load_dataset
+
+# notebook_login()
 
 logging.set_verbosity_error()
 
@@ -142,6 +150,144 @@ def learn_spell(data):
 #             loss.backward()
 #             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
+def cosine_sim(query, vectorizer):
+    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\base.pkl'):
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\base.pkl', "rb") as f:
+            base = pickle.load(f)
+            print("cosine base loaded")
+    else:
+        with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
+            data = json.load(f)
+        x = []
+        y = []
+        for name in data:
+            for question in data[name]['examples']:
+                x.append(vectorizer.encode([question]))
+                y.append(name)
+        base = [x,y]
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\base.pkl', "wb") as f:
+            pickle.dump(base, f)
+    elems = []
+    #maximum = cosine_similarity(vectorizer.encode([query]), base[0][0])
+    for i in range(1, len(base[0])):
+        cos = cosine_similarity(vectorizer.encode([query]), base[0][i])
+        elems.append(cos)
+    # print(max(elems))
+    return base[1][elems.index(max(elems))]
+
+
+def transformer_classification(data):
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+
+    def preprocess_function(examples):
+        return tokenizer(examples["text"], truncation=True)
+    imdb = {"test": [
+    ],
+    "train":[
+    ]
+    }
+    accuracy = evaluate.load("accuracy")
+
+    def compute_metrics(eval_pred):
+        predictions, labels = eval_pred
+        predictions = np.argmax(predictions, axis=1)
+        return accuracy.compute(predictions=predictions, references=labels)
+
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    # id2label = {0: "NEGATIVE", 1: "POSITIVE"}
+    # label2id = {"NEGATIVE": 0, "POSITIVE": 1}
+    id2label = {}
+    label2id = {}
+    count = 0
+    for name in data:
+        for question in data[name]['examples']:
+            buf = {
+                "label": count,
+                "text": question
+                   }
+            imdb["train"].append(buf)
+            id2label[count] = name
+            label2id[name] = count
+        for phrase in data[name]['responses']:
+            buf = {
+                "label": count,
+                "text": phrase
+                   }
+        count += 1
+
+    from datasets import load_dataset
+
+    imdb = load_dataset("imdb")
+    print(imdb)
+    tokenized_imdb = imdb.map(preprocess_function, batched=True)
+    print(tokenized_imdb)
+    #tokenized_imdb = preprocess_function(imdb)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        "distilabert-base-uncased", num_labels=1324, id2label=id2label, label2id=label2id
+    )
+    # нужно как-то залогиниться, тогда может заработает, пока нет
+    training_args = TrainingArguments(
+        output_dir="my_awesome_model",
+        learning_rate=2e-5,
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=16,
+        num_train_epochs=2,
+        weight_decay=0.01,
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        push_to_hub=True,
+    )
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_imdb["train"],
+        eval_dataset=tokenized_imdb["test"],
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=compute_metrics,
+    )
+    trainer.train()
+    text = "Кудж"
+    tokenizer = AutoTokenizer.from_pretrained(trainer)
+    inputs = tokenizer(text, return_tensors="pt")
+    model = AutoModelForSequenceClassification.from_pretrained("stevhliu/my_awesome_model")
+    with torch.no_grad():
+        logits = model(**inputs).logits
+    predicted_class_id = logits.argmax().item()
+    print(model.config.id2label[predicted_class_id])
+    classifier = pipeline("sentiment-analysis", model=trainer)
+    print(classifier(text))
+    # trainer.push_to_hub()
+    return trainer
+
+
+def fine_tuning(data, vectorizer, dictionary, model_mlp):
+    train_loss = losses.MultipleNegativesRankingLoss(model=vectorizer)
+    n_examples = [
+    ]
+    count = 0
+    for name in data:
+        buf = []
+        for question in data[name]['examples']:
+            buf.append(question)
+        n_examples.append(buf)
+
+    train_examples = []
+    for i in range(len(n_examples)):
+        example = n_examples[i]
+        print(example)
+        #print(n_examples)
+        if example != "" and example != [] and len(example) >= 3:
+            train_examples.append(InputExample(texts=[example[0], example[1], example[2]]))
+    print(train_examples)
+    train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
+    print(type(train_dataloader))
+    vectorizer.fit(train_objectives=[(train_dataloader, train_loss)], epochs=10)
+    print(get_intent_bert("кудж", model_mlp, vectorizer, dictionary))
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'wb') as f:
+        pickle.dump(vectorizer, f)
+
 
 def make_bertnetwork():
     with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
@@ -150,7 +296,7 @@ def make_bertnetwork():
     y = []
     for name in data:
         for question in data[name]['examples']:
-            x.append(question)
+            x.append(clean_up(question))
             y.append(name)
         for phrase in data[name]['responses']:
             x.append(phrase)
@@ -555,7 +701,7 @@ def get_intent_bert(text, model_mlp, vectorizer, dictionary):
     text_vec = vectorizer.encode([corrected_text])
     import pandas as pd
     proba = model_mlp.predict_proba(text_vec)[0]
-    print(max(proba))
+    print(max(proba), corrected_text)
     # print(pd.DataFrame(columns=model_mlp.classes_, data=proba), sep="\n")
     return model_mlp.predict(text_vec)[0]
 
@@ -565,8 +711,13 @@ def get_response(intent, data):
 
 
 def answering(text, model_mlp, data, vectorizer, dictionary):
-    # intent = get_intent(text, model_mlp, vectorizer, dictionary)
-    intent = get_intent_bert(text, model_mlp, vectorizer, dictionary)
+    text = clean_up(text)
+    if text.strip() == "" or text == " " or len(text) < 3:
+        intent = "flood"
+    else:
+        #   intent = get_intent(text, model_mlp, vectorizer, dictionary)
+        intent = get_intent_bert(text, model_mlp, vectorizer, dictionary)
+        # intent = cosine_sim(text, vectorizer)
     answer = get_response(intent, data)
     full_answer = [answer, intent]
     return full_answer

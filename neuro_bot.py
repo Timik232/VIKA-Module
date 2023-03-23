@@ -70,7 +70,7 @@ if __name__ == "__main__":
         print("Загрузка словаря...")
         Thread(target=learn_spell, args=(data,)).start()
     Thread(target=add_answer, args=(users,)).start()
-
+    # fine_tuning(data, vectorizer, model_mlp, dictionary)
     longpoll = VkLongPoll(vk_session)
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
@@ -287,29 +287,29 @@ if __name__ == "__main__":
                         create_keyboard(id, "Выберите пункт меню", "admin")
                     else:
                         send_message(id, "You are not supposed to be here")
-                elif text_match(message, "расписание"):
+                elif clean_up(message) == "расписание":
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание в основной "
                                      "версии ВИКА")
-                elif text_match(message, "карта Университета"):
+                elif clean_up(message) == "карта университета":
                     create_keyboard(id, "Используйте навигатор по Университету", "map")
-                elif text_match(message, "рассылка"):
+                elif clean_up(message) == "рассылка":
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, рассылка в основной "
                                      "версии ВИКА")
-                elif event.text == "Расписание пересдач":
+                elif clean_up(message) == "расписание пересдач":
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в"
                                      " основной версии ВИКА")
-                elif text_match(message, "Что ты умеешь"):
+                elif clean_up(message) == "что ты умеешь":
                     send_message(id, "Напишите мне любой вопрос, связанный с нашим университетом, и я постараюсь найти "
                                      "ответ на него. Учтите, что я не живой "
                                      "человек и могу ошибаться, однако в этой версии база ответов значительно расширена, а система "
                                      "распознавания вопросов улучшена.")
-                elif text_match(message, "Обратная связь"):
+                elif clean_up(message) == "обратная связь":
                     send_message(id, "Введите в следующем сообщении свои пожелания по улучшению бота(в том числе можно "
                                      "указать вопрос, на который вы хотели бы, чтобы бот мог отвечать. Если знаете, "
                                      "то ещё и сразу ответ). Они будут переданы разработчику. Если хотите отменить "
                                      "отправку, напишите 'Отмена'")
                     users[id].state = "Пожелания"
-                elif text_match(message, "Оценить бота"):
+                elif clean_up(message) == "оценить бота":
                     create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
                 else:
                     answer = answering(message, model_mlp, data, vectorizer, dictionary)
