@@ -630,6 +630,9 @@ def create_keyboard(id, text, response="start"):
         elif response == "стипендия-по-приоритетным-направлениям":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Перечень", "https://base.garant.ru/70842752/#block_3")
+        elif response == "страйкбол":
+            keyboard = VkKeyboard(inline=True)
+            keyboard.add_openlink_button("Страйкбольный клуб", "https://vk.com/rtuairsoftvuc")
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
