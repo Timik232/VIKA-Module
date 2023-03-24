@@ -352,7 +352,6 @@ def make_neuronetwork():
     return neuro
 
 
-# на данный момент только одна клавиатура, но есть возможность создавать другие
 def create_keyboard(id, text, response="start"):
     try:
         keyboard = VkKeyboard(one_time=True)
@@ -715,7 +714,7 @@ def get_response(intent, data):
 
 def answering(text, model_mlp, data, vectorizer, dictionary):
     text = clean_up(text)
-    if text.strip() == "" or text == " " or len(text) < 3:
+    if text.strip() == "" or text == " " or len(text) < 2:
         intent = "flood"
     else:
         #   intent = get_intent(text, model_mlp, vectorizer, dictionary)
