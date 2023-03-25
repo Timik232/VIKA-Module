@@ -717,7 +717,7 @@ def answering(text, model_mlp, data, vectorizer, dictionary):
     if text.strip() == "" or text == " " or len(text) < 2:
         intent = "flood"
     else:
-        #   intent = get_intent(text, model_mlp, vectorizer, dictionary)
+        # intent = get_intent(text, model_mlp, vectorizer, dictionary)
         intent = get_intent_bert(text, model_mlp, vectorizer, dictionary)
         # intent = cosine_sim(text, vectorizer)
     answer = get_response(intent, data)
@@ -825,7 +825,8 @@ def add_answer(users):
                 rate += users[i].like
             print("Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
         elif choice == "10":
-            make_neuronetwork()
+            # make_neuronetwork()
+            make_bertnetwork()
         else:
             print("Неверный пункт меню")
 
