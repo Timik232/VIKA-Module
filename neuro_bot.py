@@ -5,6 +5,7 @@ import urllib.request
 import vk_api
 import sys
 from neuro_defs import *
+from learning_functions import *
 from threading import Thread
 from vk_api.longpoll import VkLongPoll, VkEventType
 
