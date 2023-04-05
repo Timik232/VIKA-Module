@@ -1,4 +1,3 @@
-import os
 import pickle
 import random
 import urllib.request
@@ -8,6 +7,8 @@ from neuro_defs import *
 from learning_functions import *
 from threading import Thread
 from vk_api.longpoll import VkLongPoll, VkEventType
+from keyboard import create_keyboard
+import time
 
 
 def is_intent(id, intent, data, is_new = False):
@@ -27,52 +28,9 @@ def is_canceled(id, msg):
         return False
 
 
-if __name__ == "__main__":
-    # parsing()
-    if not os.path.exists(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle'):
-        os.mkdir(f"{os.path.dirname(os.getcwd())}\\VIKA_pickle")
-    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
-        data = json.load(f)
-    if not os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl'):
-        # neuro = make_neuronetwork()
-        neuro = make_bertnetwork()
-        model_mlp = neuro[0]
-        vectorizer = neuro[1]
-    else:
-        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'rb') as f:
-            model_mlp = pickle.load(f)
-        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'rb') as f:
-            vectorizer = pickle.load(f)
-        print("Обученная модель загружена")
-
-
-    # if os.path.isfile('mirea_users.pickle'):
-    #     with open('mirea_users.pickle', 'rb') as f:
-    #         topic_vectors = pickle.load(f)
-    #         print("Токены загружены")
-    # else:
-    #     topic_vectors = get_topic_vectors(data)
-    #     print("Токенизировано")
-    # print(topic_vectors)
-    # question = "Кудж"
-    # predicted_topic = predict_topic(question,topic_vectors)
-    # print(predicted_topic)
-
-
-    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle'):
-        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'rb') as f:
-            users = pickle.load(f)
-            print("Пользователи загружены")
-    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle'):
-        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle', 'rb') as f:
-            dictionary = pickle.load(f)
-        print("Словарь загружен")
-    else:
-        print("Загрузка словаря...")
-        Thread(target=learn_spell, args=(data,)).start()
-    Thread(target=add_answer, args=(users,)).start()
-    # fine_tuning(data, vectorizer, model_mlp, dictionary)
-    longpoll = VkLongPoll(vk_session)
+def main(model_mlp, data, vectorizer, dictionary, objects):
+    answering("start",model_mlp,data,vectorizer, dictionary)
+    print("Started")
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.from_chat:
@@ -281,6 +239,26 @@ if __name__ == "__main__":
                     create_keyboard(id, "Выберите пункт меню", "statistic")
 
             if users[id].state == "":
+                room = check_room(event.text)
+                is_important_room = False
+                for r in objects["rooms"]:
+                    if r in message:
+                        is_important_room = True
+                        break
+                if not is_important_room:
+                    if room == "78":
+                        create_keyboard(id, "Используйте навигатор по Университету", "map")
+                        continue
+                    elif room == "86":
+                        create_keyboard(id, "Аудитория располагается в кампусе на Проспекте Вернадского, д.86.", "maps")
+                        continue
+                    elif room == "kpk_20":
+                        create_keyboard(id, "Вероятно, аудитория располагается на Стромынке 20 или "
+                                            "в колледже РТУ МИРЭА.", "maps")
+                        continue
+                    elif room == "not_found":
+                        send_message(id, "Такая аудитория не была обнаружена")
+                        continue
                 if message == "админпанель" or message == "админ панель":
                     if id == 286288768:
                         send_message(id, "Доступ получен, чтобы выйти из администраторского режима напишите: 'выход'")
@@ -340,3 +318,47 @@ if __name__ == "__main__":
                         send_photo(id, "файлы/f-bot.jpg", answer[0])
                     else:
                         create_keyboard(id, answer[0], answer[1])
+
+
+if __name__ == "__main__":
+    # parsing()
+    if not os.path.exists(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle'):
+        os.mkdir(f"{os.path.dirname(os.getcwd())}\\VIKA_pickle")
+    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
+        data = json.load(f)
+    with open('jsons\\objects.json', 'r', encoding='UTF-8') as f:
+        objects = json.load(f)
+    if not os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl'):
+        # neuro = make_neuronetwork()
+        neuro = make_bertnetwork()
+        model_mlp = neuro[0]
+        vectorizer = neuro[1]
+    else:
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'rb') as f:
+            model_mlp = pickle.load(f)
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'rb') as f:
+            vectorizer = pickle.load(f)
+        print("Обученная модель загружена")
+
+    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle'):
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'rb') as f:
+            users = pickle.load(f)
+            print("Пользователи загружены")
+    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle'):
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle', 'rb') as f:
+            dictionary = pickle.load(f)
+        print("Словарь загружен")
+    else:
+        print("Загрузка словаря...")
+        Thread(target=learn_spell, args=(data,)).start()
+    Thread(target=add_answer, args=(users,)).start()
+    # fine_tuning(data, vectorizer, model_mlp, dictionary)
+    longpoll = VkLongPoll(vk_session)
+    while True:
+        try:
+            main(model_mlp, data, vectorizer, dictionary, objects)
+        except requests.exceptions.ReadTimeout:
+            print("read-timeout")
+            time.sleep(600)
+        except Exception as ex:
+            print(ex)
