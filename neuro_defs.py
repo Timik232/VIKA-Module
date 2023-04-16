@@ -18,6 +18,7 @@ from transformers import AutoModelForSequenceClassification, TrainingArguments, 
 from transformers import pipeline
 from huggingface_hub import notebook_login
 from UserClass import UserInfo
+import datetime
 
 # notebook_login()
 
@@ -72,6 +73,47 @@ def send_photo(user_id, img_req, message=None):
     except BaseException:
         send_message(id, "Не удалось отправить картинку")
         return
+
+
+def get_starting_date(objects):
+    # month + day
+    dates1 = objects['start-dates'][0].split()  # first start date
+    dates2 = objects['start-dates'][1].split()  # first start of holidays
+    dates3 = objects['start-dates'][2].split()  # second start date
+    dates4 = objects['start-dates'][3].split()  # second start of exams
+    start1 = datetime.date(datetime.datetime.now().year, int(dates1[0]), int(dates1[1]))
+    start2 = datetime.date(datetime.datetime.now().year, int(dates2[0]), int(dates2[1]))
+    start3 = datetime.date(datetime.datetime.now().year, int(dates3[0]), int(dates3[1]))
+    start4 = datetime.date(datetime.datetime.now().year, int(dates4[0]), int(dates4[1]))
+    return [start1, start2, start3, start4]
+
+
+def is_teaching_week(start1, end1, start2, end2):
+    now = datetime.datetime.now()
+    now = datetime.date(int(now.strftime("%Y")), int(now.strftime("%m")), int(now.strftime("%d")))
+    now = datetime.date(2023,1,1)
+    if start1 <= now <= end1 or start2 <= now <= end2:
+        return True
+    else:
+        return False
+
+
+def week_number(date1, date2):
+    now = datetime.datetime.now()
+    now = datetime.date(int(now.strftime("%Y")), int(now.strftime("%m")), int(now.strftime("%d")))
+    if date2 > now:
+        number = int(now.strftime("%V")) - int(date1.strftime("%V")) + 1
+    else:
+        number = int(now.strftime("%V")) - int(date2.strftime("%V")) + 1
+    return number
+
+
+def replace_abbreviation(message, objects):
+    words = message.split()
+    for word in objects["abbreviations"].keys():
+        if word in words:
+            words[words.index(word)] = objects["abbreviations"][word]
+    return " ".join(words)
 
 
 def check_room(text):
@@ -133,7 +175,7 @@ def get_intent(text, model_mlp, vectorizer, dictionary):
     return model_mlp.predict(text_vec)[0]
 
 
-def get_intent_bert(text, model_mlp, vectorizer, dictionary):
+def get_intent_bert(text, model_mlp, vectorizer, dictionary,objects):
     corrected_text = ""
     for word in text.split():
         new_word = str(dictionary.correction(word))
@@ -141,9 +183,9 @@ def get_intent_bert(text, model_mlp, vectorizer, dictionary):
             corrected_text += word + ' '
         else:
             corrected_text += new_word + ' '
-    # corrected_text = dictionary.correction(text)
+    corrected_text = replace_abbreviation(corrected_text, objects)
+    corrected_text = corrected_text.replace("quot", "")
     text_vec = vectorizer.encode([corrected_text])
-    import pandas as pd
     proba = model_mlp.predict_proba(text_vec)[0]
     print(max(proba), corrected_text)
     # print(pd.DataFrame(columns=model_mlp.classes_, data=proba), sep="\n")
@@ -154,13 +196,13 @@ def get_response(intent, data):
     return random.choice(data[intent]['responses'])
 
 
-def answering(text, model_mlp, data, vectorizer, dictionary):
+def answering(text, model_mlp, data, vectorizer, dictionary, objects):
     text = clean_up(text)
     if text.strip() == "" or text == " " or len(text) < 2:
         intent = "flood"
     else:
         # intent = get_intent(text, model_mlp, vectorizer, dictionary)
-        intent = get_intent_bert(text, model_mlp, vectorizer, dictionary)
+        intent = get_intent_bert(text, model_mlp, vectorizer, dictionary, objects)
         # intent = cosine_sim(text, vectorizer)
     answer = get_response(intent, data)
     full_answer = [answer, intent]

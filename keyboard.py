@@ -84,7 +84,7 @@ def create_keyboard(id, text, response="start"):
         elif response == "maps":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Карты кампусов",
-                                         "https://student.mirea.ru/help/file/metod_perv_2022.pdf#page=13")
+                                         "https://student.mirea.ru/help/file/metod_perv_2022.pdf#page=15")
         elif response == "double-diploma":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Программа двойного диплома",

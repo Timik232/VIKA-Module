@@ -226,9 +226,10 @@ def make_bertnetwork():
 
     device = torch.device("cuda")
     vectorizer = SentenceTransformer('distiluse-base-multilingual-cased')
+    #vectorizer = SentenceTransformer("all-mpnet-base-v2")
     vectorizer.to(device)
     x_vec = vectorizer.encode(x)
-    model_mlp = MLPClassifier(hidden_layer_sizes=322, activation='relu', solver='adam', learning_rate='adaptive',
+    model_mlp = MLPClassifier(hidden_layer_sizes=222, activation='relu', solver='adam', learning_rate='adaptive',
                               max_iter=1500)
     model_mlp.fit(x_vec, y)
     y_pred = model_mlp.predict(x_vec)
