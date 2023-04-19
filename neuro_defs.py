@@ -91,7 +91,6 @@ def get_starting_date(objects):
 def is_teaching_week(start1, end1, start2, end2):
     now = datetime.datetime.now()
     now = datetime.date(int(now.strftime("%Y")), int(now.strftime("%m")), int(now.strftime("%d")))
-    now = datetime.date(2023,1,1)
     if start1 <= now <= end1 or start2 <= now <= end2:
         return True
     else:

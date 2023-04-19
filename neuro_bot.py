@@ -50,12 +50,25 @@ def main(model_mlp, data, vectorizer, dictionary, objects):
             elif users[id].state == "retrain":
                 retrain_answer(id, users, message,data)
             elif users[id].state == "get_topic":
-                send_message(id, get_intent_bert(message,model_mlp, vectorizer,dictionary))
+                send_message(id, get_intent_bert(message,model_mlp, vectorizer,dictionary, objects))
                 users[id].state = "admin"
                 create_keyboard(id, "Выберите пункт меню", "admin")
             elif users[id].state == "statistic":
                 statistic_answer(id, users, message, event, data)
-            #send_message(id, f"Сейчас идёт {week_number()} неделя")
+            elif users[id].state == "edit":
+                edit_answer(id, users, message, event)
+            elif users[id].state == "delete_question":
+                delete_question_answer(id, users, message, event, data)
+            elif users[id].state == "delete_question":
+                delete_answer_answer(id, users, message, event, data)
+            elif users[id].state == "get_full_topic":
+                get_full_topic_answer(id, users, message,event, data, model_mlp, vectorizer, dictionary, objects)
+            if len(users[id].state.split()) > 1:
+                if users[id].state.split()[0] == "choose_delete_question":
+                    delete_choosed_question(id, users, event, data)
+                elif users[id].state.split()[0] == "choose_delete_answer":
+                    delete_choosed_answer(id, users, event, data)
+
             if users[id].state == "":
                 room = check_room(event.text)
                 is_important_room = False
