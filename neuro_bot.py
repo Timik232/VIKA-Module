@@ -59,15 +59,19 @@ def main(model_mlp, data, vectorizer, dictionary, objects):
                 edit_answer(id, users, message, event)
             elif users[id].state == "delete_question":
                 delete_question_answer(id, users, message, event, data)
-            elif users[id].state == "delete_question":
+            elif users[id].state == "delete_answer":
                 delete_answer_answer(id, users, message, event, data)
             elif users[id].state == "get_full_topic":
                 get_full_topic_answer(id, users, message,event, data, model_mlp, vectorizer, dictionary, objects)
-            if len(users[id].state.split()) > 1:
+            elif len(users[id].state.split()) > 1:
                 if users[id].state.split()[0] == "choose_delete_question":
                     delete_choosed_question(id, users, event, data)
                 elif users[id].state.split()[0] == "choose_delete_answer":
                     delete_choosed_answer(id, users, event, data)
+                elif users[id].state.split()[0] == "confirm_question":
+                    confirmed_del_question(id,users,  event, data)
+                elif users[id].state.split()[0] == "confirm_answer":
+                    confirmed_del_answer(id, users, event, data)
 
             if users[id].state == "":
                 room = check_room(event.text)
@@ -159,7 +163,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects):
 
 
 if __name__ == "__main__":
-    # parsing()
+    # parsing(1000) # Использовать если нужно ещё запарсить ответы со справочной
     if not os.path.exists(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle'):
         os.mkdir(f"{os.path.dirname(os.getcwd())}\\VIKA_pickle")
     with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:

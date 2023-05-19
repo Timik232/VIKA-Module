@@ -129,7 +129,7 @@ def delete_question_answer(id, users, message, event, data):
         formatted_answers = ""
         for i in range(len(questions)):
             formatted_answers += f"{i + 1}) {questions[i]}\n"
-        send_message(id, f"Чтобы удалить ответ, выберите номер{formatted_answers}")
+        send_message(id, f"Чтобы удалить ответ, выберите номер\n{formatted_answers}")
         users[id].state = f"choose_delete_question {event.text}"
     else:
         send_message(id, "Неверный пункт меню")
@@ -144,7 +144,7 @@ def delete_answer_answer(id, users, message, event, data):
         formatted_answers = ""
         for i in range(len(answers)):
             formatted_answers += f"{i+1}) {answers[i]}\n"
-        send_message(id, f"Чтобы удалить ответ, выберите номер{formatted_answers}")
+        send_message(id, f"Чтобы удалить ответ, выберите номер\n{formatted_answers}")
         users[id].state = f"choose_delete_answer {event.text}"
     else:
         send_message(id, "Неверный пункт меню")
@@ -152,11 +152,81 @@ def delete_answer_answer(id, users, message, event, data):
 
 
 def delete_choosed_question(id, users, event, data):
-    users[id].state = "edit"
+    intent = users[id].state.split()[1]
+    success = True
+    if not event.text.isdigit():
+        send_message(id, "То, что вы ввели, не является номером.")
+        success = False
+    else:
+        number = int(event.text)
+        if number == 0:
+            number = 1
+        number -= 1
+        if number < 0:
+            send_message(id, "Номер не может быть отрицательным.")
+            success = False
+        if len(data[intent]["examples"]) <= number:
+            send_message(id, "В теме меньше вопросов, чем номер, который вы ввели.")
+            success = False
+        if success:
+            deleted = data[intent]["examples"][number]
+            users[id].state = f"confirm_question {intent} {number}"
+            create_keyboard(id, f"Вопрос '{deleted}' будет удалён. Подтвердить действие?", "yesno")
+            return
+    if not success:
+        users[id].state = "edit"
+        create_keyboard(id, "Выберите пункт меню", "edit")
 
 
 def delete_choosed_answer(id, users, event, data):
+    intent = users[id].state.split()[1]
+    success = True
+    if not event.text.isdigit():
+        send_message(id, "То, что вы ввели, не является номером.")
+        success = False
+    else:
+        number = int(event.text)
+        if number == 0:
+            number = 1
+        number -= 1
+        if number < 0:
+            send_message(id, "Номер не может быть отрицательным.")
+            success = False
+        if len(data[intent]["responses"]) <= number:
+            send_message(id, "В теме меньше ответов, чем номер, который вы ввели.")
+            success = False
+        if success:
+            deleted = data[intent]["responses"][number]
+            users[id].state = f"confirm_answer {intent} {number}"
+            create_keyboard(id, f"Ответ '{deleted}' будет удалён. Подтвердить действие?", "yesno")
+            return
+    if not success:
+        users[id].state = "edit"
+        create_keyboard(id, "Выберите пункт меню", "edit")
+
+
+def confirmed_del_question(id, users, event, data):
+    if event.text.lower() == "да":
+        del data[users[id].state.split()[1]]["examples"][int(users[id].state.split()[2])]
+        with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        send_message(id, f"Вопрос был удалён.")
+    else:
+        send_message(id, "Действие было отменено.")
     users[id].state = "edit"
+    create_keyboard(id, "Выберите пункт меню", "edit")
+
+
+def confirmed_del_answer(id, users, event, data):
+    if event.text.lower() == "да":
+        del data[users[id].state.split()[1]]["responses"][int(users[id].state.split()[2])]
+        with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        send_message(id, f"Ответ был удалён.")
+    else:
+        send_message(id, "Действие было отменено.")
+    users[id].state = "edit"
+    create_keyboard(id, "Выберите пункт меню", "edit")
 
 
 def delete_answer(id, users, data, message, event):

@@ -1,6 +1,6 @@
 import os
 import pickle
-from torch.utils.data import DataLoader
+#from torch.utils.data import DataLoader
 from vk_api.utils import get_random_id
 import vk_api
 from private_api import token_api  # токен который не должен быть у всех, поэтому вынес в отдельный файл.
@@ -9,7 +9,6 @@ import requests
 import re
 import random
 import json
-import tokenization
 from transformers import logging
 import tensorflow as tf
 import numpy as np
@@ -120,12 +119,12 @@ def check_room(text):
     words = text.split()
     if len(words) > 10:
         return ""
-    re_78 = r"^(([а-ди])|(ивц))-?[1-4][0-9]{2}$"
+    re_78 = r"^(([а-ди])|(ивц))-?[1-4]\d{2}$"
     re_78_lection = r"^а-?(([1-9])|(1[1-8]))$"
-    re_universal = r"^[а-яa-z]{1,3}-*[0-9]+$"
-    re_86 = r'^[лтсрон]-?[1-9][0-9]{0,2}$'
+    re_universal = r"^[а-яa-z]{1,3}-*\d+$"
+    re_86 = r'^[лтсрон]-?[1-9]\d{0,2}$'
     re_78_without = r"[1-2][08]-?[0-5]"
-    re_20_kpk = r"^[1-4][0-9]{0,2}$"
+    re_20_kpk = r"^[1-4]\d{0,2}$"
     for word in words:
         if re.search(re_78, word) or re.search(re_78_lection, word) or re.search(re_78_without, word):
             return "78"

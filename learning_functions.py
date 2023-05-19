@@ -21,7 +21,7 @@ import json
 import evaluate
 import numpy as np
 from neuro_defs import clean_up
-from private_api import service_token
+#from private_api import service_token
 
 
 dictionary = SpellChecker(language='ru', distance=1)
@@ -275,13 +275,13 @@ def make_neuronetwork():
     return neuro
 
 
-def parsing():
+def parsing(number):
     question = []
     answer = []
     dict = {}
     offset = 0
     all_posts = []
-    while offset < 1000:
+    while offset < number:
         vk_page = requests.get("https://api.vk.com/method/wall.get",
                                params={
                                    'access_token': service_token,
