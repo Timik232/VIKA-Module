@@ -10,9 +10,16 @@ from threading import Thread
 from vk_api.longpoll import VkLongPoll, VkEventType
 from keyboard import create_keyboard
 from answer_functions import *
+from find_panda import get_alexnet, show_prediction, Alexnet
+import tempfile
 
 
-def main(model_mlp, data, vectorizer, dictionary, objects):
+def save_image_from_url(image_url, file_name):
+    urllib.request.urlretrieve(image_url, file_name)
+    print(F'Файл "{file_name}" успешно сохранен на диск')
+
+
+def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
     answering("start",model_mlp,data,vectorizer, dictionary, objects)
     starting_dates = get_starting_date(objects)
     print("Started")
@@ -20,12 +27,19 @@ def main(model_mlp, data, vectorizer, dictionary, objects):
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.from_chat:
                 continue
+            api_message = vk_session.method("messages.getById", {
+                "message_ids": [event.message_id],
+                "group_id": 213226596
+            })
             id = event.user_id
+
+
             if not (id in users):  # если нет в базе данных
                 users[id] = UserInfo()
                 with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                     pickle.dump(users, f)
             message = clean_up(event.text)  # очищенный текст
+
             if users[id].state == "Пожелания":
                 feedback_answer(id, users, message, event)
             elif users[id].state == "waiting":
@@ -72,6 +86,19 @@ def main(model_mlp, data, vectorizer, dictionary, objects):
                     confirmed_del_question(id,users,  event, data)
                 elif users[id].state.split()[0] == "confirm_answer":
                     confirmed_del_answer(id, users, event, data)
+
+            photo = None
+            try:
+                photo = api_message["items"][0]["attachments"][0]["photo"]
+            except Exception:
+                pass
+            if photo is not None:
+                # save_image_from_url(photo["sizes"][2]["url"], "ispanda.jpg")
+                temp_dir = tempfile.TemporaryDirectory()
+                save_path = temp_dir.name + "/" + "ispanda.jpg"
+                save_image_from_url(photo["sizes"][2]["url"], save_path)
+                Thread(target=show_prediction, args=(id, alexnet, save_path, temp_dir)).start()
+                users[id].state = "waiting"
 
             if users[id].state == "":
                 room = check_room(event.text)
@@ -193,12 +220,13 @@ if __name__ == "__main__":
     else:
         print("Загрузка словаря...")
         Thread(target=learn_spell, args=(data,)).start()
+    alexnet = get_alexnet()
     Thread(target=add_answer, args=(users,)).start()
     # fine_tuning(data, vectorizer, model_mlp, dictionary)
     longpoll = VkLongPoll(vk_session)
     while True:
         try:
-            main(model_mlp, data, vectorizer, dictionary, objects)
+            main(model_mlp, data, vectorizer, dictionary, objects, alexnet)
         except requests.exceptions.ReadTimeout:
             print("read-timeout")
             time.sleep(600)
