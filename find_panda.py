@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn  # Модуль PyTorch для слоёв нейронных сетей
 from torchvision import transforms  # Модуль PyTorch для предобработки изображений
 from neuro_defs import send_message
+import numpy as np
 
 
 class Alexnet(nn.Module):
@@ -95,8 +96,18 @@ def show_prediction(id, alexnet, img_path, temp_dir):
                  1: "панду"
                  }
     img = io.imread(img_path)
-    transformed_img = transform_img(img)
-    out = alexnet(transformed_img.unsqueeze(0).to(device=device))
-    _, pred = out.max(1)
-    send_message(id, "Нейросеть думает, что изображение содержит {}".format(idx2label[pred.item()]))
+
+    # Проверка числа каналов изображения
+    if len(img.shape) == 2:
+        # Если изображение имеет только один канал, повторите его три раза
+        img = img[:, :, None]  # Добавление нового измерения для канала
+        img = np.repeat(img, 3, axis=2)  # Повторение канала три раза
+
+    try:
+        transformed_img = transform_img(img)
+        out = alexnet(transformed_img.unsqueeze(0).to(device=device))
+        _, pred = out.max(1)
+        send_message(id, "Нейросеть думает, что изображение содержит {}".format(idx2label[pred.item()]))
+    except RuntimeError as e:
+        send_message(id, "Ошибка при обработке изображения: {}".format(str(e)))
     temp_dir.cleanup()
