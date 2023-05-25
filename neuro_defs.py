@@ -655,11 +655,6 @@ def create_keyboard(id, text, response="start"):
         return
 
 
-def tokenize(text):
-    vocab_path = 'bert/vocab.txt'
-    tokenizer = tokenization.FullTokenizer(vocab_file=vocab_path, do_lower_case=True)
-    return tokenizer.tokenize(text)
-
 
 def clean_up(text):
     text = text.lower()
