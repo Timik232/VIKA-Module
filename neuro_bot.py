@@ -198,12 +198,18 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                         users[id].like = 1
                         with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
-                        create_keyboard(id, answer[0])
+                        if users[id].language == "en":
+                            create_keyboard(id, "I am glad, like is fixed", "en", users)
+                        else:
+                            create_keyboard(id, answer[0])
                     elif answer[1] == "dislike":
                         users[id].like = -1
                         with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
                             pickle.dump(users, f)
-                        create_keyboard(id, answer[0])
+                        if users[id].language == "en":
+                            create_keyboard(id, "I am sorry, if I have bad realization, dislike is fixed", "en", users)
+                        else:
+                            create_keyboard(id, answer[0])
                     elif answer[1] == "none":
                         users[id].like = 0
                         with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\mirea_users.pickle', 'wb') as f:
