@@ -7,6 +7,7 @@ class UserInfo:
         self.like = 0  # нравится/не нравится бот
         self.state = ""  # состояние пользователя, чтобы понимать, что ему нужно сделать
         self.sending = []
+        self.language = "ru"
         # условно изначальные рассылки присвоить False, чтобы не рассылал, сделано скорее как заглушка
         for i in range(11):
             self.sending.append(False)

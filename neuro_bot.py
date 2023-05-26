@@ -11,6 +11,7 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 from keyboard import create_keyboard
 from answer_functions import *
 from find_panda import get_alexnet, show_prediction, Alexnet
+from translation import translate_to_en
 import tempfile
 
 
@@ -19,11 +20,8 @@ def save_image_from_url(image_url, file_name):
     print(F'Файл "{file_name}" успешно сохранен на диск')
 
 
-
-
-
 def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
-    answering("start",model_mlp,data,vectorizer, dictionary, objects)
+    answering("start", model_mlp, data, vectorizer, dictionary, objects)
     starting_dates = get_starting_date(objects)
     print("Started")
     for event in longpoll.listen():
@@ -35,7 +33,6 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                 "group_id": 213226596
             })
             id = event.user_id
-
 
             if not (id in users):  # если нет в базе данных
                 users[id] = UserInfo()
@@ -65,9 +62,9 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
             elif users[id].state == "is_end":
                 is_end_answer(id, users, message)
             elif users[id].state == "retrain":
-                retrain_answer(id, users, message,data)
+                retrain_answer(id, users, message, data)
             elif users[id].state == "get_topic":
-                send_message(id, get_intent_bert(message,model_mlp, vectorizer,dictionary, objects))
+                send_message(id, get_intent_bert(message, model_mlp, vectorizer, dictionary, objects))
                 users[id].state = "admin"
                 create_keyboard(id, "Выберите пункт меню", "admin")
             elif users[id].state == "statistic":
@@ -79,14 +76,14 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
             elif users[id].state == "delete_answer":
                 delete_answer_answer(id, users, message, event, data)
             elif users[id].state == "get_full_topic":
-                get_full_topic_answer(id, users, message,event, data, model_mlp, vectorizer, dictionary, objects)
+                get_full_topic_answer(id, users, message, event, data, model_mlp, vectorizer, dictionary, objects)
             elif len(users[id].state.split()) > 1:
                 if users[id].state.split()[0] == "choose_delete_question":
                     delete_choosed_question(id, users, event, data)
                 elif users[id].state.split()[0] == "choose_delete_answer":
                     delete_choosed_answer(id, users, event, data)
                 elif users[id].state.split()[0] == "confirm_question":
-                    confirmed_del_question(id,users,  event, data)
+                    confirmed_del_question(id, users, event, data)
                 elif users[id].state.split()[0] == "confirm_answer":
                     confirmed_del_answer(id, users, event, data)
 
@@ -133,16 +130,18 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     else:
                         send_message(id, "You are not supposed to be here")
                 elif clean_up(message) == "расписание":
-                    send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание в основной "
-                                     "версии ВИКА")
+                    send_message(id,
+                                 "В данном боте тестируется только система ответов на вопросы, расписание в основной "
+                                 "версии ВИКА")
                 elif clean_up(message) == "карта университета":
                     create_keyboard(id, "Используйте навигатор по Университету", "map")
                 elif clean_up(message) == "рассылка":
                     send_message(id, "В данном боте тестируется только система ответов на вопросы, рассылка в основной "
                                      "версии ВИКА")
                 elif clean_up(message) == "расписание пересдач":
-                    send_message(id, "В данном боте тестируется только система ответов на вопросы, расписание пересдач в"
-                                     " основной версии ВИКА")
+                    send_message(id,
+                                 "В данном боте тестируется только система ответов на вопросы, расписание пересдач в"
+                                 " основной версии ВИКА")
                 elif clean_up(message) == "что ты умеешь":
                     send_message(id, "Напишите мне любой вопрос, связанный с нашим университетом, и я постараюсь найти "
                                      "ответ на него. Учтите, что я не живой "
@@ -157,6 +156,25 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     users[id].state = "Пожелания"
                 elif clean_up(message) == "оценить бота":
                     create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
+                elif clean_up(message) == "english":
+                    users[id].language = "en"
+                    create_keyboard(id, "Language was changed to english.", "start-english")
+                elif clean_up(message) == "русский":
+                    users[id].language = "ru"
+                    send_message(id, "Язык был изменен на русский.")
+                elif clean_up(message) == "what do you can":
+                    send_message(id, "Write me any question related to our university, and I will try to find the "
+                                     "answer to it. Please note that I am not a living "
+                                     "person and I can be wrong, but in this version the database of answers has been"
+                                     " significantly expanded."
+                                     " You can also send me any image and I'll try to guess if there is"
+                                     "panda in the picture, or not.")
+                elif clean_up(message) == "schedule":
+                    send_message(id, "Not working at this version")
+                elif clean_up(message) == "mailing":
+                    send_message(id, "Not working at this version")
+                elif clean_up(message) == "university map":
+                    create_keyboard(id, "Use the navigator", "map")
                 else:
                     answer = answering(message, model_mlp, data, vectorizer, dictionary, objects)
                     if answer[1] == "feedback":
@@ -184,13 +202,16 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     elif answer[1] == "f-bot":
                         send_photo(id, "файлы/f-bot.jpg", answer[0])
                     elif answer[1] == "номер-недели":
-                        if is_teaching_week(starting_dates[0],starting_dates[1],starting_dates[2],starting_dates[3]):
+                        if is_teaching_week(starting_dates[0], starting_dates[1], starting_dates[2], starting_dates[3]):
                             send_message(id, f"Сейчас идёт {week_number(starting_dates[0], starting_dates[2])} неделя")
                         else:
                             send_message(id, "Текущая неделя не является основной учебной неделей.")
                     else:
-                        # главная функция отправки сообщений на все запросы
-                        create_keyboard(id, answer[0], answer[1])
+                        if users[id].language == "en":
+                            create_keyboard(id, translate_to_en(answer[0]), answer[1])
+                        else:
+                            # главная функция отправки сообщений на все запросы
+                            create_keyboard(id, answer[0], answer[1])
 
 
 if __name__ == "__main__":
