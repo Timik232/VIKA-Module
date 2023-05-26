@@ -177,6 +177,8 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     send_message(id, "Not working at this version")
                 elif clean_up(message) == "university map":
                     create_keyboard(id, "Use the navigator", "map")
+                elif clean_up(message) == "rate the bot":
+                    create_keyboard(id, "You can like or dislike the bot", "rating")
                 elif clean_up(message) == "feedback":
                     send_message(id, "Enter in the next message your feedback, it will be sent to the creator.")
                     users[id].state = "Пожелания"
@@ -211,9 +213,15 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                         send_photo(id, "файлы/f-bot.jpg", answer[0])
                     elif answer[1] == "номер-недели":
                         if is_teaching_week(starting_dates[0], starting_dates[1], starting_dates[2], starting_dates[3]):
-                            send_message(id, f"Сейчас идёт {week_number(starting_dates[0], starting_dates[2])} неделя")
+                            if users[id].language == "en":
+                                send_message(id, send_message(id, f"Now is {week_number(starting_dates[0], starting_dates[2])} week"))
+                            else:
+                                send_message(id, f"Сейчас идёт {week_number(starting_dates[0], starting_dates[2])} неделя")
                         else:
-                            send_message(id, "Текущая неделя не является основной учебной неделей.")
+                            if users[id].language == "en":
+                                send_message(id, "Current week isn't educational")
+                            else:
+                                send_message(id, "Текущая неделя не является основной учебной неделей.")
                     else:
                         if users[id].language == "en":
                             create_keyboard(id, translate_to_en(answer[0]), answer[1], users)
