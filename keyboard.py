@@ -3,7 +3,7 @@ from neuro_defs import vk
 from vk_api.utils import get_random_id
 
 
-def create_keyboard(id, text, response="start"):
+def create_keyboard(id, text, response="start", users=None):
     try:
         keyboard = VkKeyboard(one_time=True)
         if response == "not_that" or response == "help_me" or response == "rss" or response == "callhuman" or response == "flood":
@@ -298,22 +298,23 @@ def create_keyboard(id, text, response="start"):
         elif response == "страйкбол":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Страйкбольный клуб", "https://vk.com/rtuairsoftvuc")
-        elif response == "start-english":
-            keyboard = VkKeyboard(one_time=False)
-            keyboard.add_button('Schedule', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('University map', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Mailing', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Retake schedule', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('What do you can?', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Feedback', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_button('Rate the bot', color=VkKeyboardColor.PRIMARY)
-            keyboard.add_line()
-            keyboard.add_button('Русский', color=VkKeyboardColor.PRIMARY)
+        elif users is not None:
+            if users[id].language == "en":
+                keyboard = VkKeyboard(one_time=False)
+                keyboard.add_button('Schedule', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('University map', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('Mailing', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('Retake schedule', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('What do you can?', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('Feedback', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_button('Rate the bot', color=VkKeyboardColor.PRIMARY)
+                keyboard.add_line()
+                keyboard.add_button('Русский', color=VkKeyboardColor.PRIMARY)
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)

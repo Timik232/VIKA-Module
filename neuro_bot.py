@@ -158,10 +158,10 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     create_keyboard(id, "Вы можете поставить лайк или дизлайк боту", "rating")
                 elif clean_up(message) == "english":
                     users[id].language = "en"
-                    create_keyboard(id, "Language was changed to english.", "start-english")
+                    create_keyboard(id, "Language was changed to english.", "start-english", users)
                 elif clean_up(message) == "русский":
                     users[id].language = "ru"
-                    send_message(id, "Язык был изменен на русский.")
+                    create_keyboard(id, "Язык был изменен на русский.", "ru")
                 elif clean_up(message) == "what do you can":
                     send_message(id, "Write me any question related to our university, and I will try to find the "
                                      "answer to it. Please note that I am not a living "
@@ -216,7 +216,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             send_message(id, "Текущая неделя не является основной учебной неделей.")
                     else:
                         if users[id].language == "en":
-                            create_keyboard(id, translate_to_en(answer[0]), answer[1])
+                            create_keyboard(id, translate_to_en(answer[0]), answer[1], users)
                         else:
                             # главная функция отправки сообщений на все запросы
                             create_keyboard(id, answer[0], answer[1])
