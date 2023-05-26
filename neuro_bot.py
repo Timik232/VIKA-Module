@@ -173,14 +173,22 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     send_message(id, "Not working at this version")
                 elif clean_up(message) == "mailing":
                     send_message(id, "Not working at this version")
+                elif clean_up(message) == "retake schedule":
+                    send_message(id, "Not working at this version")
                 elif clean_up(message) == "university map":
                     create_keyboard(id, "Use the navigator", "map")
+                elif clean_up(message) == "feedback":
+                    send_message(id, "Enter in the next message your feedback, it will be sent to the creator.")
+                    users[id].state = "Пожелания"
                 else:
                     answer = answering(message, model_mlp, data, vectorizer, dictionary, objects)
                     if answer[1] == "feedback":
-                        send_message(id,
-                                     "Введите в следующем сообщении свои пожелания по улучшению бота. Они будут "
-                                     "переданы разработчику. Если хотите отменить отправку, напишите 'Отмена'")
+                        if users[id].language != "en":
+                            send_message(id,
+                                         "Введите в следующем сообщении свои пожелания по улучшению бота. Они будут "
+                                         "переданы разработчику. Если хотите отменить отправку, напишите 'Отмена'")
+                        else:
+                            send_message(id, "Enter in the next message your feedback, it will be sent to the creator.")
                         users[id].state = "Пожелания"
                     elif answer[1] == "panda":
                         send_photo(id, "файлы/panda.jpg", answer[0])
