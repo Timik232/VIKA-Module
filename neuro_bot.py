@@ -249,6 +249,7 @@ if __name__ == "__main__":
         neuro = make_bertnetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
+        fine_tuning(data, vectorizer, model_mlp, dictionary)
     else:
         with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'rb') as f:
             model_mlp = pickle.load(f)
@@ -269,7 +270,6 @@ if __name__ == "__main__":
         Thread(target=learn_spell, args=(data,)).start()
     alexnet = get_alexnet()
     Thread(target=add_answer, args=(users,)).start()
-    # fine_tuning(data, vectorizer, model_mlp, dictionary)
     longpoll = VkLongPoll(vk_session)
     while True:
         try:
