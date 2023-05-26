@@ -14,5 +14,6 @@ def translate_to_en(text):
     }
 
     response = requests.post(url, json=payload, headers=headers, params=querystring)
+    print(response.json())
     return response.json()[0]["translations"][0]["text"]
 
