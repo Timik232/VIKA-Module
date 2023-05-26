@@ -298,6 +298,22 @@ def create_keyboard(id, text, response="start"):
         elif response == "страйкбол":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Страйкбольный клуб", "https://vk.com/rtuairsoftvuc")
+        elif response == "start-english":
+            keyboard = VkKeyboard(one_time=False)
+            keyboard.add_button('Schedule', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('University map', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Mailing', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Retake schedule', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('What do you can?', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Feedback', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_button('Rate the bot', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('Русский', color=VkKeyboardColor.PRIMARY)
         else:
             keyboard = VkKeyboard(one_time=False)
             keyboard.add_button('Расписание', color=VkKeyboardColor.PRIMARY)
@@ -312,6 +328,8 @@ def create_keyboard(id, text, response="start"):
             keyboard.add_line()
             keyboard.add_button('Обратная связь', color=VkKeyboardColor.PRIMARY)
             keyboard.add_button('Оценить бота', color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button('English', color=VkKeyboardColor.PRIMARY)
         vk.messages.send(
             user_id=id,
             random_id=get_random_id(),

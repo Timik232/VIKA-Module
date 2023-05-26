@@ -107,7 +107,7 @@ def show_prediction(id, alexnet, img_path, temp_dir):
         transformed_img = transform_img(img)
         out = alexnet(transformed_img.unsqueeze(0).to(device=device))
         _, pred = out.max(1)
-        send_message(id, "Нейросеть думает, что изображение содержит {}".format(idx2label[pred.item()]))
+        send_message(id, "Я думаю, что изображение содержит {}".format(idx2label[pred.item()]))
     except RuntimeError as e:
         send_message(id, "Ошибка при обработке изображения: {}".format(str(e)))
     temp_dir.cleanup()

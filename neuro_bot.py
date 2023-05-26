@@ -19,6 +19,9 @@ def save_image_from_url(image_url, file_name):
     print(F'Файл "{file_name}" успешно сохранен на диск')
 
 
+
+
+
 def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
     answering("start",model_mlp,data,vectorizer, dictionary, objects)
     starting_dates = get_starting_date(objects)
@@ -143,8 +146,9 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                 elif clean_up(message) == "что ты умеешь":
                     send_message(id, "Напишите мне любой вопрос, связанный с нашим университетом, и я постараюсь найти "
                                      "ответ на него. Учтите, что я не живой "
-                                     "человек и могу ошибаться, однако в этой версии база ответов значительно расширена, а система "
-                                     "распознавания вопросов улучшена.")
+                                     "человек и могу ошибаться, однако в этой версии база ответов значительно расширена."
+                                     " Также вы можете отправить мне любое изображение и я попытаюсь угадать, есть ли"
+                                     "панда на картинке, или нет.")
                 elif clean_up(message) == "обратная связь":
                     send_message(id, "Введите в следующем сообщении свои пожелания по улучшению бота(в том числе можно "
                                      "указать вопрос, на который вы хотели бы, чтобы бот мог отвечать. Если знаете, "
