@@ -5,3 +5,6 @@ model.pkl filter=lfs diff=lfs merge=lfs -text
 vector.pkl filter=lfs diff=lfs merge=lfs -text
 dictionary.pickle filter=lfs diff=lfs merge=lfs -text
 mirea_users.pickle filter=lfs diff=lfs merge=lfs -text
+*.pickle filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.pt filter=lfs diff=lfs merge=lfs -text
