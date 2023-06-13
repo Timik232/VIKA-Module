@@ -10,13 +10,13 @@ import re
 import random
 import json
 from transformers import logging
-import tensorflow as tf
-import numpy as np
-import evaluate
-from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
-from transformers import pipeline
-from huggingface_hub import notebook_login
-from UserClass import UserInfo
+# import tensorflow as tf
+# import numpy as np
+# import evaluate
+# from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+# from transformers import pipeline
+# from huggingface_hub import notebook_login
+# from UserClass import UserInfo
 import datetime
 
 # notebook_login()
@@ -25,6 +25,19 @@ logging.set_verbosity_error()
 
 vk_session = vk_api.VkApi(token=token_api)
 vk = vk_session.get_api()
+
+
+def cwd():
+    return os.path.dirname(os.getcwd())
+
+
+# backslash
+def slh():
+    slash = cwd()
+    if "/" in slash:
+        return "/"
+    else:
+        return "\\"
 
 
 def send_message(id, msg, stiker=None, attach=None):
@@ -208,7 +221,7 @@ def answering(text, model_mlp, data, vectorizer, dictionary, objects):
 
 
 def add_answer(users):
-    with open('jsons\\intents_dataset.json', 'r', encoding='UTF-8') as f:
+    with open(f'jsons{slh()}intents_dataset.json', 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
         print(
@@ -243,7 +256,7 @@ def add_answer(users):
                     if answer == "0":
                         break
                     data[intent]['responses'].append(answer)
-                with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open(f'jsons{slh()}intents_dataset.json', 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
                 end = input()
@@ -279,7 +292,7 @@ def add_answer(users):
                     if answer == "0":
                         break
                     data[intent]['responses'].append(answer)
-                with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open(f'jsons{slh()}intents_dataset.json', 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Ответ был записан в файл.")
             else:
@@ -294,7 +307,7 @@ def add_answer(users):
                     if question == "0":
                         break
                     data[intent]['examples'].append(question)
-                with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open(f'jsons{slh()}intents_dataset.json', 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Вопросы были записаны в файл.")
             else:

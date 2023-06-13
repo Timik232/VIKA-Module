@@ -1,0 +1,13 @@
+vk-api
+pyspellchecker
+scikit-image
+requests
+transformers
+sentence-transformers
+datasets
+numpy
+evaluate
+scikit-learn
+torch
+torchvision
+torchaudio

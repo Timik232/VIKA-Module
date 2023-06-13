@@ -1,0 +1,6 @@
+FROM python:3.10.11-slim
+WORKDIR /VIKA_bot
+ADD ./requirements.txt /VIKA_bot/requirements.txt
+RUN pip3 install -r /VIKA_bot/requirements.txt
+ADD . /VIKA_bot/
+CMD [ "python3", "/VIKA_bot/neuro_bot.py" ]

@@ -35,7 +35,7 @@ def learn_spell(data):
             for word in question.split():
                 words.add(word)
     dictionary.word_frequency.load_words(words)
-    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\dictionary.pickle', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\dictionary.pickle', 'wb') as f:
         pickle.dump(dictionary, f)
     print("Словарь обучен")
 
@@ -73,8 +73,8 @@ def learn_spell(data):
 #             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
 def cosine_sim(query, vectorizer):
-    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\base.pkl'):
-        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\base.pkl', "rb") as f:
+    if os.path.isfile(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\base.pkl'):
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\base.pkl', "rb") as f:
             base = pickle.load(f)
             print("cosine base loaded")
     else:
@@ -87,7 +87,7 @@ def cosine_sim(query, vectorizer):
                 x.append(vectorizer.encode([question]))
                 y.append(name)
         base = [x,y]
-        with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\base.pkl', "wb") as f:
+        with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\base.pkl', "wb") as f:
             pickle.dump(base, f)
     elems = []
     #maximum = cosine_similarity(vectorizer.encode([query]), base[0][0])
@@ -207,7 +207,7 @@ def fine_tuning(data, vectorizer, dictionary, model_mlp):
     print(type(train_dataloader))
     vectorizer.fit(train_objectives=[(train_dataloader, train_loss)], epochs=10)
     #print(get_intent_bert("кудж", model_mlp, vectorizer, dictionary))
-    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\vector.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
 
 
@@ -235,9 +235,9 @@ def make_bertnetwork():
     y_pred = model_mlp.predict(x_vec)
     print("точность " + str(accuracy_score(y, y_pred)))
     print("f1 " + str(f1_score(y, y_pred, average='macro')))
-    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\model.pkl', 'wb') as f:
         pickle.dump(model_mlp, f)
-    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\vector.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
     neuro = [model_mlp, vectorizer]
     print("Обучено")
@@ -266,9 +266,9 @@ def make_neuronetwork():
     y_pred = model_mlp.predict(X_vec)
     print("точность " + str(accuracy_score(y, y_pred)))
     print("f1 " + str(f1_score(y, y_pred, average='macro')))
-    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\model.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\model.pkl', 'wb') as f:
         pickle.dump(model_mlp, f)
-    with open(f'{os.path.dirname(os.getcwd())}\\VIKA_pickle\\vector.pkl', 'wb') as f:
+    with open(f'{os.path.dirname(os.getcwd())}\\VIKA-pickle\\vector.pkl', 'wb') as f:
         pickle.dump(vectorizer, f)
     neuro = [model_mlp, vectorizer]
     print("Обучено")

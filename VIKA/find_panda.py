@@ -1,10 +1,10 @@
-import matplotlib.pyplot as plt
 from skimage import io, color  # Для импотра и экспорта изображений
 import torch
 import torch.nn as nn  # Модуль PyTorch для слоёв нейронных сетей
 from torchvision import transforms  # Модуль PyTorch для предобработки изображений
 from neuro_defs import send_message
 import numpy as np
+from neuro_defs import slh, cwd
 
 
 class Alexnet(nn.Module):
@@ -80,15 +80,15 @@ transform_img = transforms.Compose([
         transforms.Resize((224, 224)),  # Принудительное сжатие и интерполяция
         transforms.ToTensor()  # Трансформация к тензору исходных данных
     ])
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cpu"
 
 
 def get_alexnet():
-    alexnet = torch.load('neuro.pt')  # Загрузка модели
+    alexnet = torch.load(f'{cwd()}{slh()}VIKA-pickle{slh()}neuro.pt')  # Загрузка модели
     alexnet.eval()  # Отключение режима работы с модулями PyTorch
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     alexnet.to(device)
-    return alexnet
+    return alexnet 
 
 
 def show_prediction(id, alexnet, img_path, temp_dir):

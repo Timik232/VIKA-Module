@@ -1,0 +1,9 @@
+version: '1'
+services:
+  bot:
+    build: VIKA-Module/
+    volumes:
+      - data:/model
+    
+volumes:
+  data:
