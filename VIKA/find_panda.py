@@ -1,4 +1,4 @@
-from skimage import io, color  # Для импотра и экспорта изображений
+from skimage import io, color  # Для импорта и экспорта изображений
 import torch
 import torch.nn as nn  # Модуль PyTorch для слоёв нейронных сетей
 from torchvision import transforms  # Модуль PyTorch для предобработки изображений
@@ -101,9 +101,11 @@ def show_prediction(id, alexnet, img_path, temp_dir):
 
     # Проверка числа каналов изображения
     if len(img.shape) == 2:
-        # Если изображение имеет только один канал, повторите его три раза
-        img = img[:, :, None]  # Добавление нового измерения для канала
-        img = np.repeat(img, 3, axis=2)  # Повторение канала три раза
+        img = img[:, :, None]  
+        img = np.repeat(img, 3, axis=2)  
+    if len(img.shape) == 1:
+        img = img[:, :, None]  
+        img = np.repeat(img, 3, axis=1)
 
     try:
         transformed_img = transform_img(img)

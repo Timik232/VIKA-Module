@@ -230,7 +230,7 @@ def answering(text, model_mlp, data, vectorizer, dictionary, objects):
 
 
 def add_answer(users):
-    with open(f'jsons{slh()}intents_dataset.json', 'r', encoding='UTF-8') as f:
+    with open(os.path.join('jsons', 'intents_dataset.json'), 'r', encoding='UTF-8') as f:
         data = json.load(f)
     while True:
         print(
@@ -265,7 +265,7 @@ def add_answer(users):
                     if answer == "0":
                         break
                     data[intent]['responses'].append(answer)
-                with open(f'jsons{slh()}intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open(os.path.join('jsons', 'intents_dataset.json'), 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Ответ был записан в файл. Ввести еще ответ? (y/n)")
                 end = input()
@@ -301,7 +301,7 @@ def add_answer(users):
                     if answer == "0":
                         break
                     data[intent]['responses'].append(answer)
-                with open(f'jsons{slh()}intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open(os.path.join('jsons', 'intents_dataset.json'), 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Ответ был записан в файл.")
             else:
@@ -316,7 +316,7 @@ def add_answer(users):
                     if question == "0":
                         break
                     data[intent]['examples'].append(question)
-                with open(f'jsons{slh()}intents_dataset.json', 'w', encoding='UTF-8') as f:
+                with open(os.path.join('jsons', 'intents_dataset.json'), 'w', encoding='UTF-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
                 print("Вопросы были записаны в файл.")
             else:

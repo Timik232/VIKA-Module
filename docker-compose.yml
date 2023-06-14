@@ -5,6 +5,7 @@ services:
     image: komolov/vika-bot:latest
     volumes:
       - data:/VIKA_bot/VIKA-pickle
+    tty: true
     entrypoint: [ "python3", "/VIKA_bot/VIKA/neuro_bot.py" ]
     
 volumes:

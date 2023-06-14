@@ -18,13 +18,13 @@ from UserClass import UserInfo
 
 def save_image_from_url(image_url, file_name):
     urllib.request.urlretrieve(image_url, file_name)
-    print(F'Файл "{file_name}" успешно сохранен на диск')
+    print(F'File "{file_name}" was saved to temporary')
 
 
 def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
     answering("start", model_mlp, data, vectorizer, dictionary, objects)
     starting_dates = get_starting_date(objects)
-    print("Started")
+    print("Bot is listening")
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.from_chat:
@@ -37,7 +37,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
 
             if not (id in users):  # если нет в базе данных
                 users[id] = UserInfo()
-                with open(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle', 'wb') as f:
+                with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
                     pickle.dump(users, f)
             message = clean_up(event.text)  # очищенный текст
 
@@ -197,7 +197,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                         send_photo(id, "files/panda.jpg", answer[0])
                     elif answer[1] == "like":
                         users[id].like = 1
-                        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle', 'wb') as f:
+                        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
                             pickle.dump(users, f)
                         if users[id].language == "en":
                             create_keyboard(id, "I am glad, like is fixed", "en", users)
@@ -205,7 +205,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             create_keyboard(id, answer[0])
                     elif answer[1] == "dislike":
                         users[id].like = -1
-                        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle', 'wb') as f:
+                        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
                             pickle.dump(users, f)
                         if users[id].language == "en":
                             create_keyboard(id, "I am sorry, if I have bad realization, dislike is fixed", "en", users)
@@ -213,7 +213,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             create_keyboard(id, answer[0])
                     elif answer[1] == "none":
                         users[id].like = 0
-                        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle', 'wb') as f:
+                        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
                     elif answer[1] == "f-bot":
@@ -238,42 +238,42 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
 
 
 if __name__ == "__main__":
-    print(cwd())
+    print("started")
     # parsing(1000) # Использовать если нужно ещё запарсить ответы со справочной
     device = "cpu"
-    if not os.path.exists(f'{cwd()}{slh()}VIKA-pickle'):
-        os.mkdir(f"{cwd()}{slh()}VIKA-pickle")
-    with open(f'jsons{slh()}intents_dataset.json', 'r', encoding='UTF-8') as f:
+    if not os.path.exists(os.path.join(cwd(), 'VIKA-pickle')):
+        os.mkdir(os.path.join(cwd(), 'VIKA-pickle'))
+    with open(os.path.join('jsons', 'intents_dataset.json'), 'r', encoding='UTF-8') as f:
         data = json.load(f)
-    with open(f'jsons{slh()}objects.json', 'r', encoding='UTF-8') as f:
+    with open(os.path.join('jsons', 'objects.json'), 'r', encoding='UTF-8') as f:
         objects = json.load(f)
-    if not os.path.isfile(f'{cwd()}{slh()}VIKA-pickle{slh()}model.pkl'):
+    if not os.path.isfile(os.path.join(cwd(), 'VIKA-pickle','model.pkl')):
         # neuro = make_neuronetwork()
         neuro = make_bertnetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
         fine_tuning(data, vectorizer, model_mlp, dictionary)
     else:
-        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}model.pkl', 'rb') as f:
+        with open(os.path.join(cwd(), 'VIKA-pickle', 'model.pkl'), 'rb') as f:
             model_mlp = pickle.load(f)
-        print(f'{cwd()}{slh()}VIKA-pickle{slh()}vector.pkl')
-        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}vector.pkl', 'rb') as f:
-            # vectorizer = pickle.load(f)
-            # vectorizer.to("cpu")
-            # vectorizer = CPU_Unpickler(f).load()
-            vectorizer = torch.load(f, map_location=torch.device('cpu'))
-        print("Обученная модель загружена")
+        # with open(f'{cwd()}{slh()}VIKA-pickle{slh()}vector.pkl', 'rb') as f:
+        #     # vectorizer = pickle.load(f)
+        #     # vectorizer = CPU_Unpickler(f).load()
+        #     vectorizer = torch.load(f, map_location=torch.device('cpu'))
+        vectorizer = SentenceTransformer('distiluse-base-multilingual-cased')
+        vectorizer.load_state_dict(torch.load(os.path.join(cwd(), 'VIKA-pickle' 'vector.pt'), map_location='cpu'))
+        print("Model loaded")
 
-    if os.path.isfile(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle'):
-        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle', 'rb') as f:
+    if os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle')):
+        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'rb') as f:
             users = pickle.load(f)
-            print("Пользователи загружены")
-    if os.path.isfile(f'{cwd()}{slh()}VIKA-pickle{slh()}dictionary.pickle'):
-        with open(f'{cwd()}{slh()}VIKA-pickle{slh()}dictionary.pickle', 'rb') as f:
+            print("Users loaded")
+    if os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', 'dictionary.pickle')):
+        with open(os.path.join(cwd(), 'VIKA-pickle', 'dictionary.pickle'), 'rb') as f:
             dictionary = pickle.load(f)
-        print("Словарь загружен")
+        print("Dictionary loaded")
     else:
-        print("Загрузка словаря...")
+        print("Dictionary loading...")
         Thread(target=learn_spell, args=(data,)).start()
     alexnet = get_alexnet()
     # Thread(target=add_answer, args=(users,)).start()
