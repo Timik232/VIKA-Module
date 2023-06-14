@@ -1,8 +1,9 @@
 import requests
 import os
 import json
-from neuro_defs import cwd, slh
 import subprocess
+from neuro_defs import cwd, slh
+from private_api import oauth_token, FOLD_ID
 
 
 def generate_iam_token():
@@ -63,8 +64,19 @@ def translate_to_en(intent, text, data):
     else:
         print(translated)
         try:
-            IAM_TOKEN = "t1.9euelZrHiZ7KzZebmMbMipKTlseYie3rnpWazJeby5CeipSUicqZno_Plpzl9PdDZVhb-e99NmaM3fT3AxRWW_nvfTZmjM3n9euelZrJnJ6alJqTnonHzs2Ol4mVlO_8xeuelZrJnJ6alJqTnonHzs2Ol4mVlA.i0WCeHEUOpBDH7xRsbgMi0GYKxlmGnzxnFWxQigE3zGtgfAENqMiNA3uWECrAVkPDwjt9oS0ZhyFLLOtV9bCCw"
-            folder_id = "b1g1fnbia9jfvu3is4d8"
+            url = "https://iam.api.cloud.yandex.net/iam/v1/tokens"
+            headers = {
+                "Content-Type": "application/json",
+            }
+
+            data = {
+                "yandexPassportOauthToken": oauth_token
+            }
+
+            response = requests.post(url, json=data, headers=headers)
+            IAM_TOKEN = response.json()["iamToken"]
+            # IAM_TOKEN = "t1.9euelZrHiZ7KzZebmMbMipKTlseYie3rnpWazJeby5CeipSUicqZno_Plpzl9PdDZVhb-e99NmaM3fT3AxRWW_nvfTZmjM3n9euelZrJnJ6alJqTnonHzs2Ol4mVlO_8xeuelZrJnJ6alJqTnonHzs2Ol4mVlA.i0WCeHEUOpBDH7xRsbgMi0GYKxlmGnzxnFWxQigE3zGtgfAENqMiNA3uWECrAVkPDwjt9oS0ZhyFLLOtV9bCCw"
+            folder_id = FOLD_ID
             target_language = "en"
             texts = [text]
             body = {

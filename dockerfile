@@ -4,3 +4,4 @@ ADD ./VIKA/requirements.txt /VIKA_bot/VIKA/requirements.txt
 RUN pip3 install -r /VIKA_bot/VIKA/requirements.txt
 ADD VIKA/. /VIKA_bot/VIKA/
 ADD VIKA-pickle/. /VIKA_bot/VIKA-pickle/
+ENV CUDA_VISIBLE_DEVICES ${1:+1}

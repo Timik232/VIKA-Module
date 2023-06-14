@@ -18,6 +18,8 @@ from transformers import logging
 # from huggingface_hub import notebook_login
 # from UserClass import UserInfo
 import datetime
+import io
+import torch
 
 # notebook_login()
 
@@ -25,6 +27,13 @@ logging.set_verbosity_error()
 
 vk_session = vk_api.VkApi(token=token_api)
 vk = vk_session.get_api()
+
+
+class CPU_Unpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+
 
 
 def cwd():

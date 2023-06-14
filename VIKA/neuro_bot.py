@@ -256,9 +256,11 @@ if __name__ == "__main__":
     else:
         with open(f'{cwd()}{slh()}VIKA-pickle{slh()}model.pkl', 'rb') as f:
             model_mlp = pickle.load(f)
+        print(f'{cwd()}{slh()}VIKA-pickle{slh()}vector.pkl')
         with open(f'{cwd()}{slh()}VIKA-pickle{slh()}vector.pkl', 'rb') as f:
             # vectorizer = pickle.load(f)
             # vectorizer.to("cpu")
+            # vectorizer = CPU_Unpickler(f).load()
             vectorizer = torch.load(f, map_location=torch.device('cpu'))
         print("Обученная модель загружена")
 

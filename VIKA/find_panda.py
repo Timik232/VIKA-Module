@@ -4,7 +4,7 @@ import torch.nn as nn  # Модуль PyTorch для слоёв нейронны
 from torchvision import transforms  # Модуль PyTorch для предобработки изображений
 from neuro_defs import send_message
 import numpy as np
-from neuro_defs import slh, cwd
+from neuro_defs import slh, cwd, CPU_Unpickler
 
 
 class Alexnet(nn.Module):
@@ -85,7 +85,10 @@ device = "cpu"
 
 
 def get_alexnet():
-    alexnet = torch.load(f'{cwd()}{slh()}VIKA-pickle{slh()}neuro.pt', map_location=torch.device("cpu"))  # Загрузка модели
+    #alexnet = torch.load(f'{cwd()}{slh()}VIKA-pickle{slh()}neuro.pt', map_location=torch.device("cpu"))  # Загрузка модели
+    with open(f'{cwd()}{slh()}VIKA-pickle{slh()}neuro.pt', "rb") as f:
+        #alexnet = CPU_Unpickler(f).load()
+        alexnet = torch.load(f, map_location=torch.device('cpu'))
     alexnet.eval()  # Отключение режима работы с модулями PyTorch
     return alexnet 
 
