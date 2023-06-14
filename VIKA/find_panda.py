@@ -85,9 +85,8 @@ device = "cpu"
 
 
 def get_alexnet():
-    alexnet = torch.load(f'{cwd()}{slh()}VIKA-pickle{slh()}neuro.pt')  # Загрузка модели
+    alexnet = torch.load(f'{cwd()}{slh()}VIKA-pickle{slh()}neuro.pt', map_location=torch.device("cpu"))  # Загрузка модели
     alexnet.eval()  # Отключение режима работы с модулями PyTorch
-    alexnet.to(device)
     return alexnet 
 
 

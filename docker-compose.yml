@@ -1,9 +1,11 @@
-version: '1'
+version: '3'
 services:
   bot:
-    build: VIKA-Module/
+    build: /
+    image: komolov/vika-bot:latest
     volumes:
-      - data:/model
+      - data:/VIKA_bot/VIKA-pickle
+    entrypoint: [ "python3", "/VIKA_bot/VIKA/neuro_bot.py" ]
     
 volumes:
   data:

@@ -194,7 +194,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             send_message(id, "Enter in the next message your feedback, it will be sent to the creator.")
                         users[id].state = "Пожелания"
                     elif answer[1] == "panda":
-                        send_photo(id, "файлы/panda.jpg", answer[0])
+                        send_photo(id, "files/panda.jpg", answer[0])
                     elif answer[1] == "like":
                         users[id].like = 1
                         with open(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle', 'wb') as f:
@@ -217,7 +217,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
                     elif answer[1] == "f-bot":
-                        send_photo(id, "файлы/f-bot.jpg", answer[0])
+                        send_photo(id, "files/f-bot.jpg", answer[0])
                     elif answer[1] == "номер-недели":
                         if is_teaching_week(starting_dates[0], starting_dates[1], starting_dates[2], starting_dates[3]):
                             if users[id].language == "en":
@@ -231,13 +231,14 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                                 send_message(id, "Текущая неделя не является основной учебной неделей.")
                     else:
                         if users[id].language == "en":
-                            create_keyboard(id, translate_to_en(answer[0]), answer[1], users)
+                            create_keyboard(id, translate_to_en(answer[1], answer[0], data), answer[1], users)
                         else:
                             # главная функция отправки сообщений на все запросы
                             create_keyboard(id, answer[0], answer[1])
 
 
 if __name__ == "__main__":
+    print(cwd())
     # parsing(1000) # Использовать если нужно ещё запарсить ответы со справочной
     device = "cpu"
     if not os.path.exists(f'{cwd()}{slh()}VIKA-pickle'):
@@ -256,8 +257,9 @@ if __name__ == "__main__":
         with open(f'{cwd()}{slh()}VIKA-pickle{slh()}model.pkl', 'rb') as f:
             model_mlp = pickle.load(f)
         with open(f'{cwd()}{slh()}VIKA-pickle{slh()}vector.pkl', 'rb') as f:
-            vectorizer = pickle.load(f)
-            vectorizer.to(device)
+            # vectorizer = pickle.load(f)
+            # vectorizer.to("cpu")
+            vectorizer = torch.load(f, map_location=torch.device('cpu'))
         print("Обученная модель загружена")
 
     if os.path.isfile(f'{cwd()}{slh()}VIKA-pickle{slh()}mirea_users.pickle'):
