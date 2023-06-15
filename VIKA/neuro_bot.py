@@ -261,7 +261,7 @@ if __name__ == "__main__":
         #     # vectorizer = CPU_Unpickler(f).load()
         #     vectorizer = torch.load(f, map_location=torch.device('cpu'))
         vectorizer = SentenceTransformer('distiluse-base-multilingual-cased')
-        vectorizer.load_state_dict(torch.load(os.path.join(cwd(), 'VIKA-pickle' 'vector.pt'), map_location='cpu'))
+        vectorizer.load_state_dict(torch.load(os.path.join(cwd(), 'VIKA-pickle', 'vector.pt'), map_location='cpu'))
         print("Model loaded")
 
     if os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle')):
