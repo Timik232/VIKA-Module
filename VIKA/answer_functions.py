@@ -1,7 +1,10 @@
+import os
+
 from keyboard import create_keyboard
-from neuro_defs import text_match, send_message, vk, get_intent_bert
+from neuro_defs import text_match, send_message, vk, get_intent_bert, get_starting_date
 from threading import Thread
-from learning_functions import make_bertnetwork, learn_spell
+from learning_functions import make_bertnetwork, learn_spell, fine_tuning
+import datetime
 import json
 
 
@@ -82,7 +85,19 @@ def edit_answer(id, users, message, event):
         create_keyboard(id, "Выберите пункт меню", "statistic")
 
 
-def admin_answer(id, users, message, event, data):
+def get_list_dates(starting_dates):
+    current_dates = ""
+    dates = []
+    for i in range(4):
+        dates.append(starting_dates[i].strftime("%d %B"))
+    current_dates += f"Начало осеннего семестра: {dates[0]}\n"
+    current_dates += f"Конец осеннего семестра: {dates[1]}\n"
+    current_dates += f"Начало весеннего семестра: {dates[2]}\n"
+    current_dates += f"Конец весеннего семестра: {dates[3]}\n"
+    return current_dates
+
+
+def admin_answer(id, users, message, event, data, starting_dates):
     if text_match(message, "выход") or text_match(message, ".Выход"):
         users[id].state = "waiting"
         create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
@@ -116,6 +131,10 @@ def admin_answer(id, users, message, event, data):
     elif event.text == "7.Переобучить модель":
         create_keyboard(id, "Вы уверены? Это может занять значительное время (да/нет)", "yesno")
         users[id].state = "retrain"
+    elif event.text == "8.Изменить даты":
+        current_dates = get_list_dates(starting_dates)
+        create_keyboard(id, current_dates, "dates")
+        users[id].state = "dates"
     else:
         send_message(id, "Неверный пункт меню")
         create_keyboard(id, "Выберите пункт меню", "admin")
@@ -210,7 +229,7 @@ def confirmed_del_question(id, users, event, data):
         del data[users[id].state.split()[1]]["examples"][int(users[id].state.split()[2])]
         with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
-        send_message(id, f"Вопрос был удалён.")
+        send_message(id, "Вопрос был удалён.")
     else:
         send_message(id, "Действие было отменено.")
     users[id].state = "edit"
@@ -222,7 +241,7 @@ def confirmed_del_answer(id, users, event, data):
         del data[users[id].state.split()[1]]["responses"][int(users[id].state.split()[2])]
         with open('jsons\\intents_dataset.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
-        send_message(id, f"Ответ был удалён.")
+        send_message(id, "Ответ был удалён.")
     else:
         send_message(id, "Действие было отменено.")
     users[id].state = "edit"
@@ -312,7 +331,7 @@ def is_end_answer(id, users, message):
         create_keyboard(id, "Выберите пункт меню", "edit")
 
 
-def retrain_answer(id, users, message,data):
+def retrain_answer(id, users, message, data, model_mlp, vectorizer):
     if text_match(message, "да") or text_match(message, "yes"):
         users[id].state = "admin"
         vk.messages.setActivity(user_id=id, type='typing')
@@ -321,6 +340,7 @@ def retrain_answer(id, users, message,data):
         neuro = make_bertnetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
+        fine_tuning(data, vectorizer)
         send_message(id, "Нейросеть переобучена")
         create_keyboard(id, "Выберите пункт меню", "admin")
     else:
@@ -397,3 +417,65 @@ def statistic_answer(id, users, message, event, data):
     else:
         send_message(id, "Неверный пункт меню")
         create_keyboard(id, "Выберите пункт меню", "statistic")
+
+
+def dates_answer(id, users, event):
+    text = "Введите дату в формате '01.09', где первое число – дата, второе – месяц."
+    if event.text == "1.Начало осеннего семестра":
+        users[id].state = "start_autumn"
+        send_message(id, text)
+    elif event.text == "2.Конец осеннего семестра":
+        users[id].state = "end_autumn"
+        send_message(id, text)
+    elif event.text == "3.Начало весеннего семестра":
+        users[id].state = "start_spring"
+        send_message(id, text)
+    elif event.text == "4.Конец весеннего семестра":
+        users[id].state = "end_spring"
+        send_message(id, text)
+    elif text_match(event.text, "Вернуться"):
+        users[id].state = "admin"
+        create_keyboard(id, "Выберите пункт меню", "admin")
+    else:
+        send_message(id, "Неверный пункт меню")
+        create_keyboard(id, "Выберите пункт меню", "dates")
+
+
+def change_date_answer(id, users, event, objects, starting_dates):
+    flag = False
+    try:
+        parts = event.text.split(".")
+        if not (parts[0].isdigit() and parts[1].isdigit()):
+            flag = True
+            raise ValueError("Ввод не является числом")
+        number1 = int(parts[0])
+        number2 = int(parts[1])
+        if number1 <= 0 or number2 <= 0:
+            flag = True
+            raise ValueError("Дата должна быть > 0")
+        if number1 > 31 or number2 > 12:
+            flag = True
+            raise ValueError("Недопустимые значения")
+    except Exception as E:
+        send_message(id, str(E))
+        flag = True
+    if not flag:
+        number1 = str(int(parts[0]))
+        number2 = str(int(parts[1]))
+        if users[id].state == "start_autumn":
+            objects["start-dates"][0] = f"{number2} {number1}"
+            send_message(id, f"Начало осеннего семестра установлено на {number1}.{number2}")
+        elif users[id].state == "end_autumn":
+            objects["start-dates"][1] = f"{number2} {number1}"
+            send_message(id, f"Конец осеннего семестра установлено на {number1}.{number2}")
+        elif users[id].state == "start_spring":
+            objects["start-dates"][2] = f"{number2} {number1}"
+            send_message(id, f"Начало весеннего семестра установлено на {number1}.{number2}")
+        elif users[id].state == "end_spring":
+            objects["start-dates"][3] = f"{number2} {number1}"
+            send_message(id, f"Конец весеннего семестра установлено на {number1}.{number2}")
+        with open(os.path.join("jsons", "objects.json"), "w", encoding='UTF-8') as f:
+            json.dump(objects, f, ensure_ascii=False, indent=4)
+    users[id].state = "dates"
+    starting_dates = get_starting_date(objects)
+    create_keyboard(id, get_list_dates(starting_dates), "dates")

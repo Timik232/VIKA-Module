@@ -35,9 +35,9 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
             })
             id = event.user_id
 
-            if not (id in users):  # если нет в базе данных
+            if id not in users:  # если нет в базе данных
                 users[id] = UserInfo()
-                with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
+                with open(os.path.join(cwd(), 'VIKA-pickle', USERS_PICKLE), 'wb') as f:
                     pickle.dump(users, f)
             message = clean_up(event.text)  # очищенный текст
 
@@ -46,7 +46,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
             elif users[id].state == "waiting":
                 users[id].state = ""
             elif users[id].state == "admin":
-                admin_answer(id, users, message, event, data)
+                admin_answer(id, users, message, event, data, starting_dates)
 
             elif users[id].state == "delete":
                 delete_answer(id, users, data, message, event)
@@ -63,7 +63,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
             elif users[id].state == "is_end":
                 is_end_answer(id, users, message)
             elif users[id].state == "retrain":
-                retrain_answer(id, users, message, data)
+                retrain_answer(id, users, message, data, model_mlp, vectorizer)
             elif users[id].state == "get_topic":
                 send_message(id, get_intent_bert(message, model_mlp, vectorizer, dictionary, objects))
                 users[id].state = "admin"
@@ -78,6 +78,11 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                 delete_answer_answer(id, users, message, event, data)
             elif users[id].state == "get_full_topic":
                 get_full_topic_answer(id, users, message, event, data, model_mlp, vectorizer, dictionary, objects)
+            elif users[id].state == "dates":
+                dates_answer(id, users, event)
+            elif users[id].state == "start_autumn" or users[id].state == "start_spring" or  \
+            users[id].state == "end_autumn" or users[id].state == "end_spring":
+                change_date_answer(id, users, event, objects, starting_dates)
             elif len(users[id].state.split()) > 1:
                 if users[id].state.split()[0] == "choose_delete_question":
                     delete_choosed_question(id, users, event, data)
@@ -197,7 +202,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                         send_photo(id, "files/panda.jpg", answer[0])
                     elif answer[1] == "like":
                         users[id].like = 1
-                        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
+                        with open(os.path.join(cwd(), 'VIKA-pickle', USERS_PICKLE), 'wb') as f:
                             pickle.dump(users, f)
                         if users[id].language == "en":
                             create_keyboard(id, "I am glad, like is fixed", "en", users)
@@ -205,7 +210,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             create_keyboard(id, answer[0])
                     elif answer[1] == "dislike":
                         users[id].like = -1
-                        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
+                        with open(os.path.join(cwd(), 'VIKA-pickle', USERS_PICKLE), 'wb') as f:
                             pickle.dump(users, f)
                         if users[id].language == "en":
                             create_keyboard(id, "I am sorry, if I have bad realization, dislike is fixed", "en", users)
@@ -213,7 +218,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                             create_keyboard(id, answer[0])
                     elif answer[1] == "none":
                         users[id].like = 0
-                        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'wb') as f:
+                        with open(os.path.join(cwd(), 'VIKA-pickle', USERS_PICKLE), 'wb') as f:
                             pickle.dump(users, f)
                         create_keyboard(id, answer[0])
                     elif answer[1] == "f-bot":
@@ -221,9 +226,11 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
                     elif answer[1] == "номер-недели":
                         if is_teaching_week(starting_dates[0], starting_dates[1], starting_dates[2], starting_dates[3]):
                             if users[id].language == "en":
-                                send_message(id, send_message(id, f"Now is {week_number(starting_dates[0], starting_dates[2])} week"))
+                                send_message(id, send_message(id,
+                                                              f"Now is {week_number(starting_dates[0], starting_dates[2])} week"))
                             else:
-                                send_message(id, f"Сейчас идёт {week_number(starting_dates[0], starting_dates[2])} неделя")
+                                send_message(id,
+                                             f"Сейчас идёт {week_number(starting_dates[0], starting_dates[2])} неделя")
                         else:
                             if users[id].language == "en":
                                 send_message(id, "Current week isn't educational")
@@ -238,6 +245,7 @@ def main(model_mlp, data, vectorizer, dictionary, objects, alexnet):
 
 
 if __name__ == "__main__":
+    USERS_PICKLE = 'mirea_users.pickle'
     print("started")
     # parsing(1000) # Использовать если нужно ещё запарсить ответы со справочной
     device = "cpu"
@@ -247,12 +255,12 @@ if __name__ == "__main__":
         data = json.load(f)
     with open(os.path.join('jsons', 'objects.json'), 'r', encoding='UTF-8') as f:
         objects = json.load(f)
-    if not os.path.isfile(os.path.join(cwd(), 'VIKA-pickle','model.pkl')):
+    if not os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', 'model.pkl')):
         # neuro = make_neuronetwork()
         neuro = make_bertnetwork()
         model_mlp = neuro[0]
         vectorizer = neuro[1]
-        fine_tuning(data, vectorizer, model_mlp, dictionary)
+        fine_tuning(data, vectorizer)
     else:
         with open(os.path.join(cwd(), 'VIKA-pickle', 'model.pkl'), 'rb') as f:
             model_mlp = pickle.load(f)
@@ -264,8 +272,8 @@ if __name__ == "__main__":
         vectorizer.load_state_dict(torch.load(os.path.join(cwd(), 'VIKA-pickle', 'vector.pt'), map_location='cpu'))
         print("Model loaded")
 
-    if os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle')):
-        with open(os.path.join(cwd(), 'VIKA-pickle', 'mirea_users.pickle'), 'rb') as f:
+    if os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', USERS_PICKLE)):
+        with open(os.path.join(cwd(), 'VIKA-pickle', USERS_PICKLE), 'rb') as f:
             users = pickle.load(f)
             print("Users loaded")
     if os.path.isfile(os.path.join(cwd(), 'VIKA-pickle', 'dictionary.pickle')):

@@ -177,6 +177,17 @@ def create_keyboard(id, text, response="start", users=None):
         elif response == "radio":
             keyboard = VkKeyboard(inline=True)
             keyboard.add_openlink_button("Радиорубка и Радиолаб", "https://vk.com/rtu.radio")
+        elif response == "dates":
+            keyboard = VkKeyboard(one_time=True)
+            keyboard.add_button("1.Начало осеннего семестра", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("2.Конец осеннего семестра", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("3.Начало весеннего семестра", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("4.Конец весеннего семестра", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("5.Вернуться", color=VkKeyboardColor.NEGATIVE)
         elif response == "admin":
             keyboard = VkKeyboard(one_time=True)
             keyboard.add_button("1.Вывести все темы", color=VkKeyboardColor.PRIMARY)
@@ -193,7 +204,9 @@ def create_keyboard(id, text, response="start", users=None):
             keyboard.add_line()
             keyboard.add_button("7.Переобучить модель", color=VkKeyboardColor.PRIMARY)
             keyboard.add_line()
-            keyboard.add_button("8.Выход", color=VkKeyboardColor.NEGATIVE)
+            keyboard.add_button("8.Изменить даты", color=VkKeyboardColor.PRIMARY)
+            keyboard.add_line()
+            keyboard.add_button("9.Выход", color=VkKeyboardColor.NEGATIVE)
         elif response == "edit":
             keyboard = VkKeyboard(one_time=True)
             keyboard.add_button("1.Добавить тему", color=VkKeyboardColor.PRIMARY)

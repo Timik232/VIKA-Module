@@ -185,7 +185,7 @@ def transformer_classification(data):
     return trainer
 
 
-def fine_tuning(data, vectorizer, dictionary, model_mlp):
+def fine_tuning(data, vectorizer):
     train_loss = losses.MultipleNegativesRankingLoss(model=vectorizer)
     n_examples = [
     ]
@@ -241,6 +241,7 @@ def make_bertnetwork():
     vectorizer.to("cpu")
     with open(os.path.join(cwd(), 'VIKA-pickle', 'vector.pkl'), 'wb') as f:
         pickle.dump(vectorizer, f)
+    torch.save(vectorizer.state_dict(), os.path.join(cwd(), 'VIKA-pickle', 'vector.pt'))
     neuro = [model_mlp, vectorizer]
     print("Обучено")
     return neuro

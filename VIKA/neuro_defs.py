@@ -35,7 +35,6 @@ class CPU_Unpickler(pickle.Unpickler):
             return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
 
 
-
 def cwd():
     return os.path.dirname(os.getcwd())
 
@@ -49,7 +48,7 @@ def slh():
         return "\\"
 
 
-def send_message(id, msg, stiker=None, attach=None):
+def send_message(id: int, msg: str, stiker=None, attach=None) -> None:
     try:
         vk.messages.send(
             user_id=id,
