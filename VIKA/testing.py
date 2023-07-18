@@ -5,7 +5,7 @@ import json
 import pandas as pd
 import openpyxl
 from sentence_transformers import SentenceTransformer
-from VIKA.neuro_defs import cwd, answering
+from neuro_defs import cwd, answering
 from learning_functions import fine_tuning, learn_spell, make_bertnetwork
 
 if __name__ == "__main__":
