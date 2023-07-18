@@ -38,7 +38,7 @@ def learn_spell(data):
     dictionary.word_frequency.load_words(words)
     with open(os.path.join(cwd(), 'VIKA-pickle', 'dictionary.pickle'), 'wb') as f:
         pickle.dump(dictionary, f)
-    print("Словарь обучен")
+    print("Dictionary is ready")
 
 
 # def fine_tuning():
@@ -203,9 +203,9 @@ def fine_tuning(data, vectorizer):
         #print(n_examples)
         if example != "" and example != [] and len(example) >= 3:
             train_examples.append(InputExample(texts=[example[0], example[1], example[2]]))
-    print(train_examples)
+    # print(train_examples)
     train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
-    print(type(train_dataloader))
+    # print(type(train_dataloader))
     vectorizer.fit(train_objectives=[(train_dataloader, train_loss)], epochs=10)
     #print(get_intent_bert("кудж", model_mlp, vectorizer, dictionary))
     with open(os.path.join(cwd(), 'VIKA-pickle', 'vector.pkl'), 'wb') as f:
@@ -225,9 +225,9 @@ def make_bertnetwork():
             x.append(phrase)
             y.append(name)
 
-    device = torch.device("cuda")
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cpu")
     vectorizer = SentenceTransformer('distiluse-base-multilingual-cased')
-    #vectorizer = SentenceTransformer("all-mpnet-base-v2")
     vectorizer.to(device)
     x_vec = vectorizer.encode(x)
     model_mlp = MLPClassifier(hidden_layer_sizes=222, activation='relu', solver='adam', learning_rate='adaptive',
@@ -327,7 +327,7 @@ def parsing(number):
             "examples": tempq,
             "responses": tempa
         }
-    with open("second_dict.json", 'w', encoding='UTF-8') as f:
+    with open("informational.json", 'w', encoding='UTF-8') as f:
         json.dump(dict, f, ensure_ascii=False, indent=4)
     # print(dict)
     print("json ready")
