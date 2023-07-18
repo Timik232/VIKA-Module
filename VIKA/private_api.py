@@ -1,0 +1,3 @@
+token_api = "INSERT_API_HERE"
+oauth_token = "iNSERT_YANDEX_API"
+FOLD_ID = "INSERT_FOLDER_ID"
