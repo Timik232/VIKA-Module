@@ -1,5 +1,5 @@
 # Тестирование
-1) Необходимо установить зависимости из файла requirements.txt: pip install -r requirements.txt
+1) Необходимо установить зависимости из файла requirements.txt: pip install -r VIKA/requirements.txt
 2) Поместить файл для обучения модели в папку jsons, он должен быть в формате json и называться "intents_dataset". В моём файле у вопросов название ключа "examples", у ответов "responses". Если в файле у вопросов и ответов другие ключи, то в файле learning_functions у функции make_bertnetwork нужно в цикле слова "examples" и "responses" заменить на соответствующие в новом файле, и в функции fine-tuning заменить "examples". Изначальный код выглядит следующим образом: \
    for question in data[name]['examples']: \
    То есть если в новом файле вопросы под ключом "questions", код должен стать таким: \
