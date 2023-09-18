@@ -56,25 +56,25 @@ def edit_answer(id, users, message, event):
     if text_match(message, "выход") or text_match(message, ".Выход"):
         users[id].state = "waiting"
         create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
-    elif event.text == "1.Добавить тему":
+    elif event.text == "1.Добавить тему" or event.text == '1':
         send_message(id, "Введите название темы")
         users[id].state = "add_intent"
-    elif event.text == "2.Удалить тему":
+    elif event.text == "2.Удалить тему" or event.text == '2':
         send_message(id, "Введите название темы")
         users[id].state = "delete"
-    elif event.text == "3.Добавить ответ к теме":
+    elif event.text == "3.Добавить ответ к теме" or event.text == '3':
         send_message(id, "Введите название темы")
         users[id].state = "check_intent add_answer"
-    elif event.text == "4.Добавить вопрос к теме":
+    elif event.text == "4.Добавить вопрос к теме" or event.text == '4':
         send_message(id, "Введите название темы")
         users[id].state = "check_intent add_question"
-    elif event.text == "5.Удалить вопрос у темы":
+    elif event.text == "5.Удалить вопрос у темы" or event.text == '5':
         send_message(id, "Введите название темы")
         users[id].state = "delete_question"
-    elif event.text == "6.Удалить ответ у темы":
+    elif event.text == "6.Удалить ответ у темы" or event.text == '6':
         send_message(id, "Введите название темы")
         users[id].state = "delete_answer"
-    elif event.text == "7.Вернуться":
+    elif event.text == "7.Вернуться" or event.text == '7':
         users[id].state = "admin"
         create_keyboard(id, "Выберите пункт меню", "admin")
     elif text_match(message, "выход"):
@@ -82,7 +82,7 @@ def edit_answer(id, users, message, event):
         create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
     else:
         send_message(id, "Неверный пункт меню")
-        create_keyboard(id, "Выберите пункт меню", "statistic")
+        create_keyboard(id, "Выберите пункт меню", "edit")
 
 
 def get_list_dates(starting_dates):
@@ -101,7 +101,7 @@ def admin_answer(id, users, message, event, data, starting_dates):
     if text_match(message, "выход") or text_match(message, ".Выход"):
         users[id].state = "waiting"
         create_keyboard(id, "Выход выполнен, можете снова пользоваться ботом")
-    elif event.text == "1.Вывести все темы":
+    elif event.text == "1.Вывести все темы" or event.text == "1":
         smg = ""
         count = 0
         for i in data:
@@ -113,25 +113,25 @@ def admin_answer(id, users, message, event, data, starting_dates):
                 count = 0
         send_message(id, smg)
         create_keyboard(id, "Выберите пункт меню", "admin")
-    elif event.text == "2.Вывести всю информацию по теме":
+    elif event.text == "2.Вывести всю информацию по теме" or event.text == '2':
         send_message(id, "Введите название темы")
         users[id].state = "info"
-    elif event.text == "3.Найти тему по вопросу" or text_match(message, "тема по вопросу"):
+    elif event.text == "3.Найти тему по вопросу" or text_match(message, "тема по вопросу") or event.text == '3':
         users[id].state = "get_topic"
         send_message(id, "Отправьте вопрос, по которому будет выдана тема")
-    elif event.text == "4.Вывести всю тему по вопросу":
+    elif event.text == "4.Вывести всю тему по вопросу" or event.text == '4':
         users[id].state = "get_full_topic"
         send_message(id, "Отправьте вопрос, по которому будет выдана тема")
-    elif event.text == "5.Статистика и рейтинг":
+    elif event.text == "5.Статистика и рейтинг" or event.text == '5':
         users[id].state = "statistic"
         create_keyboard(id, "Выберите пункт меню", "statistic")
-    elif event.text == "6.Управление темами":
+    elif event.text == "6.Управление темами" or event.text == '6':
         users[id].state = "edit"
         create_keyboard(id, "Выберите пункт меню", "edit")
-    elif event.text == "7.Переобучить модель":
+    elif event.text == "7.Переобучить модель" or event.text == '7':
         create_keyboard(id, "Вы уверены? Это может занять значительное время (да/нет)", "yesno")
         users[id].state = "retrain"
-    elif event.text == "8.Изменить даты":
+    elif event.text == "8.Изменить даты" or event.text == '8':
         current_dates = get_list_dates(starting_dates)
         create_keyboard(id, current_dates, "dates")
         users[id].state = "dates"
@@ -313,7 +313,8 @@ def add_intent_answer(id, users, message, event, data):
         intent = event.text.replace(" ", "-").lower()
         if is_intent(id, intent, data, True):
             send_message(id, "Такая тема уже есть")
-            users[id].state = "edit"
+            users[id].state = "add_intent"
+            return
         else:
             data[intent] = {}
             data[intent]['examples'] = []
@@ -388,16 +389,16 @@ def add_question_answer(id, users, event, data):
 
 
 def statistic_answer(id, users, message, event, data):
-    if event.text == "1.Вывести количество тем":
+    if event.text == "1.Вывести количество тем" or event.text == '1':
         send_message(id, "Количество тем: " + str(len(data)))
         create_keyboard(id, "Выберите пункт меню", "statistic")
-    elif event.text == "2.Рейтинг бота":
+    elif event.text == "2.Рейтинг бота" or event.text == '2':
         rate = 0
         for i in users:
             rate += users[i].like
         send_message(id, "Рейтинг бота (количество лайков минус количество дизлайков): " + str(rate))
         create_keyboard(id, "Выберите пункт меню", "statistic")
-    elif event.text == "3.Количество вопросов":
+    elif event.text == "3.Количество вопросов" or event.text == '3':
         count = 0
         for i in data.keys():
             for j in data[i]["examples"]:
@@ -405,10 +406,10 @@ def statistic_answer(id, users, message, event, data):
         count -= 300  # вычитаем вопросы приветствия/прощания и т.п.
         send_message(id, "Количество вопросов, внесённых в бота: " + str(count))
         create_keyboard(id, "Выберите пункт меню", "statistic")
-    elif event.text == "4.Вывести количество пользователей":
+    elif event.text == "4.Вывести количество пользователей" or event.text == '4':
         send_message(id, "Количество пользователей бота: " + str(len(users)))
         create_keyboard(id, "Выберите пункт меню", "statistic")
-    elif text_match(message, "5.Вернуться"):
+    elif event.text == "5.Вернуться" or event.text == '5':
         users[id].state = "admin"
         create_keyboard(id, "Выберите пункт меню", "admin")
     elif text_match(message, "выход"):
@@ -421,19 +422,19 @@ def statistic_answer(id, users, message, event, data):
 
 def dates_answer(id, users, event):
     text = "Введите дату в формате '01.09', где первое число – дата, второе – месяц."
-    if event.text == "1.Начало осеннего семестра":
+    if event.text == "1.Начало осеннего семестра" or event.text == "1":
         users[id].state = "start_autumn"
         send_message(id, text)
-    elif event.text == "2.Конец осеннего семестра":
+    elif event.text == "2.Конец осеннего семестра" or event.text == "2":
         users[id].state = "end_autumn"
         send_message(id, text)
-    elif event.text == "3.Начало весеннего семестра":
+    elif event.text == "3.Начало весеннего семестра" or event.text == "3":
         users[id].state = "start_spring"
         send_message(id, text)
-    elif event.text == "4.Конец весеннего семестра":
+    elif event.text == "4.Конец весеннего семестра" or event.text == '4':
         users[id].state = "end_spring"
         send_message(id, text)
-    elif text_match(event.text, "Вернуться"):
+    elif text_match(event.text, "Вернуться") or event.text == '5':
         users[id].state = "admin"
         create_keyboard(id, "Выберите пункт меню", "admin")
     else:
